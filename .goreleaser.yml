@@ -1,0 +1,42 @@
+version: 2
+
+project_name: spork
+
+builds:
+  - binary: spork
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: "spork_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+brews:
+  - repository:
+      owner: sporkops
+      name: homebrew-tap
+    name: spork
+    homepage: https://sporkops.com
+    description: "CLI for Ping by Spork — uptime monitoring"
+    license: MIT
+    install: |
+      bin.install "spork"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
