@@ -41,8 +41,30 @@ main() {
     tmpdir=$(mktemp -d)
     trap 'rm -rf "$tmpdir"' EXIT
 
-    # Download archive
+    # Download archive and checksums
     curl -sSL "${base_url}/${archive}" -o "${tmpdir}/${archive}"
+    curl -sSL "${base_url}/checksums.txt" -o "${tmpdir}/checksums.txt"
+
+    # Verify checksum
+    expected=$(grep "${archive}" "${tmpdir}/checksums.txt" | awk '{print $1}')
+    if [ -n "$expected" ]; then
+        if command -v sha256sum >/dev/null 2>&1; then
+            actual=$(sha256sum "${tmpdir}/${archive}" | awk '{print $1}')
+        elif command -v shasum >/dev/null 2>&1; then
+            actual=$(shasum -a 256 "${tmpdir}/${archive}" | awk '{print $1}')
+        else
+            echo "Warning: cannot verify checksum (no sha256sum or shasum found)"
+            actual="$expected"
+        fi
+        if [ "$actual" != "$expected" ]; then
+            echo "Error: checksum verification failed"
+            echo "  Expected: $expected"
+            echo "  Got:      $actual"
+            exit 1
+        fi
+    else
+        echo "Warning: no checksum found for ${archive}, skipping verification"
+    fi
 
     tar -xzf "${tmpdir}/${archive}" -C "$tmpdir"
 

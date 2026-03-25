@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+var authHTTPClient = &http.Client{
+	Timeout: 30 * time.Second,
+}
+
 const (
 	loginTimeout    = 5 * time.Minute
 	pollInterval    = 5 * time.Second
@@ -32,7 +36,7 @@ type pollResponse struct {
 // then polls until the user confirms or the timeout expires.
 func Login() (string, error) {
 	// Step 1: create a device auth session
-	resp, err := http.Post(apiBase+"/cli/auth/sessions", "application/json", nil)
+	resp, err := authHTTPClient.Post(apiBase+"/cli/auth/sessions", "application/json", nil)
 	if err != nil {
 		return "", fmt.Errorf("creating auth session: %w", err)
 	}
@@ -68,7 +72,7 @@ func Login() (string, error) {
 
 func pollSession(deviceCode string) (apiKey string, done bool, err error) {
 	body, _ := json.Marshal(map[string]string{"device_code": deviceCode})
-	resp, err := http.Post(apiBase+"/cli/auth/sessions/poll", "application/json", bytes.NewReader(body))
+	resp, err := authHTTPClient.Post(apiBase+"/cli/auth/sessions/poll", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return "", false, fmt.Errorf("polling auth session: %w", err)
 	}

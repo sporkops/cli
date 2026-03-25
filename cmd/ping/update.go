@@ -2,6 +2,7 @@ package ping
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 
 	"github.com/sporkops/cli/internal/api"
@@ -45,6 +46,11 @@ var updateCmd = &cobra.Command{
 			hasChanges = true
 		}
 		if cmd.Flags().Changed("target") {
+			parsed, err := url.Parse(updateTarget)
+			if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+				fmt.Fprintln(os.Stderr, "Error: URL must start with http:// or https://")
+				return fmt.Errorf("invalid URL: %s", updateTarget)
+			}
 			update.Target = updateTarget
 			hasChanges = true
 		}

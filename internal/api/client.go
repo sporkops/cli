@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -111,6 +113,11 @@ func NewClient(token string) *Client {
 	if baseURL == "" {
 		baseURL = defaultBaseURL
 	}
+	// Enforce HTTPS to prevent sending auth tokens over plaintext
+	if !strings.HasPrefix(baseURL, "https://") {
+		fmt.Fprintf(os.Stderr, "Warning: SPORK_API_URL must use https://, ignoring %q\n", baseURL)
+		baseURL = defaultBaseURL
+	}
 	return &Client{
 		baseURL: baseURL,
 		token:   token,
@@ -141,7 +148,7 @@ func (c *Client) ListMonitors() ([]Monitor, error) {
 // GetMonitor returns a single monitor by ID.
 func (c *Client) GetMonitor(id string) (*Monitor, error) {
 	var result Monitor
-	if err := c.doSingle("GET", "/monitors/"+id, nil, &result); err != nil {
+	if err := c.doSingle("GET", "/monitors/"+url.PathEscape(id), nil, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -150,7 +157,7 @@ func (c *Client) GetMonitor(id string) (*Monitor, error) {
 // UpdateMonitor partially updates a monitor by ID.
 func (c *Client) UpdateMonitor(id string, m *Monitor) (*Monitor, error) {
 	var result Monitor
-	if err := c.doSingle("PATCH", "/monitors/"+id, m, &result); err != nil {
+	if err := c.doSingle("PATCH", "/monitors/"+url.PathEscape(id), m, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -158,12 +165,12 @@ func (c *Client) UpdateMonitor(id string, m *Monitor) (*Monitor, error) {
 
 // DeleteMonitor deletes a monitor by ID.
 func (c *Client) DeleteMonitor(id string) error {
-	return c.doRaw("DELETE", "/monitors/"+id, nil)
+	return c.doRaw("DELETE", "/monitors/"+url.PathEscape(id), nil)
 }
 
 // GetMonitorResults returns recent check results for a monitor.
 func (c *Client) GetMonitorResults(id string, limit int) ([]MonitorResult, error) {
-	path := fmt.Sprintf("/monitors/%s/results?per_page=%d", id, limit)
+	path := fmt.Sprintf("/monitors/%s/results?per_page=%d", url.PathEscape(id), limit)
 	var result []MonitorResult
 	if err := c.doList("GET", path, nil, &result); err != nil {
 		return nil, err
@@ -207,7 +214,7 @@ func (c *Client) ListAPIKeys() ([]APIKey, error) {
 
 // DeleteAPIKey deletes an API key by ID.
 func (c *Client) DeleteAPIKey(id string) error {
-	return c.doRaw("DELETE", "/api-keys/"+id, nil)
+	return c.doRaw("DELETE", "/api-keys/"+url.PathEscape(id), nil)
 }
 
 // doSingle performs a request and unwraps a single-item {data: ...} envelope.

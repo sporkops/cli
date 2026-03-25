@@ -13,17 +13,24 @@ type credentials struct {
 	SavedAt string `json:"saved_at"`
 }
 
-func configDir() string {
+func configDir() (string, error) {
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, "spork")
+		return filepath.Join(xdg, "spork"), nil
 	}
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "spork")
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("determining home directory: %w", err)
+	}
+	return filepath.Join(home, ".config", "spork"), nil
 }
 
 // CredentialsPath returns the path to the credentials file.
 func CredentialsPath() (string, error) {
-	return filepath.Join(configDir(), "credentials.json"), nil
+	dir, err := configDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "credentials.json"), nil
 }
 
 // SaveToken writes the auth token to the credentials file.
