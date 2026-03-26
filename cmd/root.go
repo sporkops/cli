@@ -1,6 +1,10 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/sporkops/cli/cmd/alertchannel"
 	"github.com/sporkops/cli/cmd/apikey"
 	"github.com/sporkops/cli/cmd/ping"
 	"github.com/spf13/cobra"
@@ -36,6 +40,50 @@ func init() {
 	rootCmd.AddCommand(logoutCmd)
 	rootCmd.AddCommand(ping.Cmd)
 	rootCmd.AddCommand(apikey.Cmd)
+	rootCmd.AddCommand(alertchannel.Cmd)
+	rootCmd.AddCommand(completionCmd)
+	rootCmd.AddCommand(versionCmd)
+}
+
+var completionCmd = &cobra.Command{
+	Use:   "completion [bash|zsh|fish|powershell]",
+	Short: "Generate shell completion script",
+	Long: `Generate shell completion scripts for your shell.
+
+To load completions:
+
+Bash:
+  source <(spork completion bash)
+
+Zsh:
+  source <(spork completion zsh)
+
+Fish:
+  spork completion fish | source`,
+	DisableFlagsInUseLine: true,
+	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
+	Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		switch args[0] {
+		case "bash":
+			return cmd.Root().GenBashCompletionV2(os.Stdout, true)
+		case "zsh":
+			return cmd.Root().GenZshCompletion(os.Stdout)
+		case "fish":
+			return cmd.Root().GenFishCompletion(os.Stdout, true)
+		case "powershell":
+			return cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+		}
+		return nil
+	},
+}
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print the CLI version",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("spork %s\n", version)
+	},
 }
 
 // Execute runs the root command.

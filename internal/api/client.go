@@ -73,6 +73,16 @@ type MonitorResult struct {
 	CheckedAt      string `json:"checked_at"`
 }
 
+// AlertChannel represents an alert channel for notifications.
+type AlertChannel struct {
+	ID        string            `json:"id,omitempty"`
+	Name      string            `json:"name"`
+	Type      string            `json:"type"`
+	Config    map[string]string `json:"config"`
+	Verified  bool              `json:"verified,omitempty"`
+	CreatedAt string            `json:"created_at,omitempty"`
+}
+
 // dataEnvelope wraps the standard API response: {"data": ...}
 type dataEnvelope struct {
 	Data json.RawMessage `json:"data"`
@@ -215,6 +225,34 @@ func (c *Client) ListAPIKeys() ([]APIKey, error) {
 // DeleteAPIKey deletes an API key by ID.
 func (c *Client) DeleteAPIKey(id string) error {
 	return c.doRaw("DELETE", "/api-keys/"+url.PathEscape(id), nil)
+}
+
+// ListAlertChannels returns all alert channels for the authenticated user.
+func (c *Client) ListAlertChannels() ([]AlertChannel, error) {
+	var result []AlertChannel
+	if err := c.doList("GET", "/alert-channels", nil, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// CreateAlertChannel creates a new alert channel.
+func (c *Client) CreateAlertChannel(ch *AlertChannel) (*AlertChannel, error) {
+	var result AlertChannel
+	if err := c.doSingle("POST", "/alert-channels", ch, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// DeleteAlertChannel deletes an alert channel by ID.
+func (c *Client) DeleteAlertChannel(id string) error {
+	return c.doRaw("DELETE", "/alert-channels/"+url.PathEscape(id), nil)
+}
+
+// TestAlertChannel sends a test notification to an alert channel.
+func (c *Client) TestAlertChannel(id string) error {
+	return c.doRaw("POST", "/alert-channels/"+url.PathEscape(id)+"/test", nil)
 }
 
 // doSingle performs a request and unwraps a single-item {data: ...} envelope.

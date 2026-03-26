@@ -1,32 +1,28 @@
-package ping
+package alertchannel
 
 import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/auth"
 	"github.com/spf13/cobra"
 )
 
-// Cmd is the `spork ping` parent command.
+// Cmd is the `spork alert-channel` parent command.
 var Cmd = &cobra.Command{
-	Use:   "ping",
-	Short: "Manage uptime monitors",
-	Long:  "Add, list, and manage uptime monitors for your sites and APIs.",
+	Use:     "alert-channel",
+	Aliases: []string{"ac"},
+	Short:   "Manage alert channels",
+	Long:    "Create, list, and manage alert channels for downtime notifications.",
 }
 
 func init() {
 	Cmd.AddCommand(addCmd)
 	Cmd.AddCommand(listCmd)
-	Cmd.AddCommand(statusCmd)
-	Cmd.AddCommand(updateCmd)
 	Cmd.AddCommand(rmCmd)
-	Cmd.AddCommand(historyCmd)
-	Cmd.AddCommand(pauseCmd)
-	Cmd.AddCommand(unpauseCmd)
+	Cmd.AddCommand(testCmd)
 }
 
 // requireAuth loads the stored token and returns an API client.
@@ -85,23 +81,4 @@ func handleAPIError(err error) bool {
 	}
 
 	return true
-}
-
-// resolveMonitorID resolves an ID-or-URL argument to a monitor ID.
-// If the argument looks like a URL, it fetches all monitors and finds the match.
-func resolveMonitorID(client *api.Client, idOrURL string) (string, string, error) {
-	if strings.Contains(idOrURL, "://") {
-		// Looks like a URL — resolve via list
-		monitors, err := client.ListMonitors()
-		if err != nil {
-			return "", "", err
-		}
-		for _, m := range monitors {
-			if m.Target == idOrURL {
-				return m.ID, m.Name, nil
-			}
-		}
-		return "", "", fmt.Errorf("no monitor found for URL: %s", idOrURL)
-	}
-	return idOrURL, "", nil
 }
