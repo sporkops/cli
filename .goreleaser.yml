@@ -33,6 +33,7 @@ brews:
 
 checksum:
   name_template: "checksums.txt"
+  algorithm: sha256
 
 changelog:
   sort: asc
