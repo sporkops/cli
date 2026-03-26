@@ -8,6 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	statusFilterStatus string
+	statusFilterType   string
+)
+
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show current status of all monitors",
@@ -25,6 +30,8 @@ var statusCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Error fetching status: %s\n", err)
 			return err
 		}
+
+		monitors = filterMonitors(monitors, statusFilterStatus, statusFilterType)
 
 		if cmd.Root().Flag("json").Changed {
 			return output.PrintJSON(monitors)
@@ -53,4 +60,9 @@ var statusCmd = &cobra.Command{
 		output.PrintTable(headers, rows)
 		return nil
 	},
+}
+
+func init() {
+	statusCmd.Flags().StringVar(&statusFilterStatus, "status", "", "filter by status (up, down, degraded, paused, pending)")
+	statusCmd.Flags().StringVar(&statusFilterType, "type", "", "filter by monitor type")
 }

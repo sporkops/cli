@@ -14,6 +14,7 @@ const (
 	colorRed    = "\033[31m"
 	colorGreen  = "\033[32m"
 	colorYellow = "\033[33m"
+	colorCyan   = "\033[36m"
 )
 
 // colorEnabled returns true if color output should be used.
@@ -62,6 +63,10 @@ func ColorStatus(status string) string {
 		return colorRed + "down" + colorReset
 	case "pending":
 		return colorYellow + "pending" + colorReset
+	case "degraded":
+		return colorYellow + "degraded" + colorReset
+	case "paused":
+		return colorCyan + "paused" + colorReset
 	default:
 		return status
 	}

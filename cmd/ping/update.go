@@ -14,13 +14,13 @@ var (
 	updateTarget   string
 	updateMethod   string
 	updateInterval int
-	updatePaused   string
+	updatePaused   bool
 )
 
 var updateCmd = &cobra.Command{
 	Use:   "update <id|url>",
 	Short: "Update an existing monitor",
-	Long:  "Update an existing monitor's settings.\n\nExample:\n  spork ping update https://example.com --name \"New Name\"\n  spork ping update abc123 --interval 300 --paused true",
+	Long:  "Update an existing monitor's settings.\n\nExample:\n  spork ping update https://example.com --name \"New Name\"\n  spork ping update abc123 --interval 300\n\nTip: Use 'spork ping pause' and 'spork ping unpause' to pause/resume monitors.",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := requireAuth()
@@ -63,8 +63,7 @@ var updateCmd = &cobra.Command{
 			hasChanges = true
 		}
 		if cmd.Flags().Changed("paused") {
-			p := updatePaused == "true"
-			update.Paused = &p
+			update.Paused = &updatePaused
 			hasChanges = true
 		}
 
@@ -97,5 +96,5 @@ func init() {
 	updateCmd.Flags().StringVar(&updateTarget, "target", "", "new target URL to monitor")
 	updateCmd.Flags().StringVar(&updateMethod, "method", "", "HTTP method")
 	updateCmd.Flags().IntVar(&updateInterval, "interval", 0, "check interval in seconds (60-3600)")
-	updateCmd.Flags().StringVar(&updatePaused, "paused", "", "pause or unpause (true/false)")
+	updateCmd.Flags().BoolVar(&updatePaused, "paused", false, "pause or unpause the monitor")
 }

@@ -5,8 +5,14 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
+)
+
+var (
+	listFilterStatus string
+	listFilterType   string
 )
 
 var listCmd = &cobra.Command{
@@ -26,6 +32,8 @@ var listCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Error listing monitors: %s\n", err)
 			return err
 		}
+
+		monitors = filterMonitors(monitors, listFilterStatus, listFilterType)
 
 		if cmd.Root().Flag("json").Changed {
 			return output.PrintJSON(monitors)
@@ -51,4 +59,27 @@ var listCmd = &cobra.Command{
 		output.PrintTable(headers, rows)
 		return nil
 	},
+}
+
+func init() {
+	listCmd.Flags().StringVar(&listFilterStatus, "status", "", "filter by status (up, down, degraded, paused, pending)")
+	listCmd.Flags().StringVar(&listFilterType, "type", "", "filter by monitor type")
+}
+
+// filterMonitors applies client-side status and type filters.
+func filterMonitors(monitors []api.Monitor, status, monitorType string) []api.Monitor {
+	if status == "" && monitorType == "" {
+		return monitors
+	}
+	filtered := make([]api.Monitor, 0, len(monitors))
+	for _, m := range monitors {
+		if status != "" && m.Status != status {
+			continue
+		}
+		if monitorType != "" && m.Type != monitorType {
+			continue
+		}
+		filtered = append(filtered, m)
+	}
+	return filtered
 }
