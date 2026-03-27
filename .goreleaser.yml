@@ -24,6 +24,7 @@ brews:
       owner: sporkops
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
     name: spork
     homepage: https://sporkops.com
     description: "CLI for Ping by Spork — uptime monitoring"
