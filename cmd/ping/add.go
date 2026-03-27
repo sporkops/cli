@@ -4,21 +4,39 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/sporkops/cli/internal/api"
 	"github.com/spf13/cobra"
 )
 
 var (
-	addName     string
-	addMethod   string
-	addInterval int
+	addName           string
+	addMethod         string
+	addInterval       int
+	addType           string
+	addExpectedStatus int
+	addTimeout        int
+	addRegions        []string
+	addHeaders        []string
+	addBody           string
+	addKeyword        string
+	addKeywordType    string
+	addSSLWarnDays    int
+	addAlertChannels  []string
+	addTags           []string
 )
 
 var addCmd = &cobra.Command{
 	Use:   "add <url>",
 	Short: "Add a new uptime monitor",
-	Long:  "Add a new uptime monitor for the given URL.\n\nExample:\n  spork ping add https://example.com\n  spork ping add https://api.example.com/health --name \"API Health\" --interval 30",
+	Long: `Add a new uptime monitor for the given URL.
+
+Example:
+  spork ping add https://example.com
+  spork ping add https://api.example.com/health --name "API Health" --interval 300
+  spork ping add https://example.com --type keyword --keyword "OK"
+  spork ping add https://example.com --type ssl --ssl-warn-days 30`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := requireAuth()
@@ -38,12 +56,33 @@ var addCmd = &cobra.Command{
 			name = parsed.Hostname()
 		}
 
+		// Parse --headers key=value pairs into a map.
+		headers := make(map[string]string)
+		for _, kv := range addHeaders {
+			parts := strings.SplitN(kv, "=", 2)
+			if len(parts) != 2 {
+				fmt.Fprintf(os.Stderr, "Error: invalid header format %q, expected key=value\n", kv)
+				return fmt.Errorf("invalid header: %s", kv)
+			}
+			headers[parts[0]] = parts[1]
+		}
+
 		monitor := &api.Monitor{
-			Target:   rawURL,
-			Name:     name,
-			Type:     "http",
-			Method:   addMethod,
-			Interval: addInterval,
+			Target:          rawURL,
+			Name:            name,
+			Type:            addType,
+			Method:          addMethod,
+			ExpectedStatus:  addExpectedStatus,
+			Interval:        addInterval,
+			Timeout:         addTimeout,
+			Regions:         addRegions,
+			Headers:         headers,
+			Body:            addBody,
+			Keyword:         addKeyword,
+			KeywordType:     addKeywordType,
+			SSLWarnDays:     addSSLWarnDays,
+			AlertChannelIDs: addAlertChannels,
+			Tags:            addTags,
 		}
 
 		result, err := client.CreateMonitor(monitor)
@@ -65,6 +104,17 @@ var addCmd = &cobra.Command{
 
 func init() {
 	addCmd.Flags().StringVar(&addName, "name", "", "human-readable name (defaults to hostname)")
-	addCmd.Flags().StringVar(&addMethod, "method", "GET", "HTTP method")
-	addCmd.Flags().IntVar(&addInterval, "interval", 60, "check interval in seconds (60 or 30)")
+	addCmd.Flags().StringVar(&addType, "type", "http", "monitor type: http, ssl, dns, keyword, tcp, ping")
+	addCmd.Flags().StringVar(&addMethod, "method", "GET", "HTTP method (GET, HEAD, POST, PUT)")
+	addCmd.Flags().IntVar(&addExpectedStatus, "expected-status", 200, "expected HTTP status code (100-599)")
+	addCmd.Flags().IntVar(&addInterval, "interval", 60, "check interval in seconds (60-86400, multiple of 60)")
+	addCmd.Flags().IntVar(&addTimeout, "timeout", 30, "timeout per check in seconds (5-120)")
+	addCmd.Flags().StringSliceVar(&addRegions, "regions", nil, "check regions (us-central1, europe-west1)")
+	addCmd.Flags().StringArrayVar(&addHeaders, "header", nil, "custom HTTP header as key=value (repeatable)")
+	addCmd.Flags().StringVar(&addBody, "body", "", "HTTP request body for POST/PUT")
+	addCmd.Flags().StringVar(&addKeyword, "keyword", "", "keyword to search in response (required for keyword type)")
+	addCmd.Flags().StringVar(&addKeywordType, "keyword-type", "", "keyword match type: exists, not_exists")
+	addCmd.Flags().IntVar(&addSSLWarnDays, "ssl-warn-days", 0, "days before SSL expiry to warn (default 14)")
+	addCmd.Flags().StringSliceVar(&addAlertChannels, "alert-channels", nil, "alert channel IDs to notify")
+	addCmd.Flags().StringSliceVar(&addTags, "tags", nil, "organization tags")
 }
