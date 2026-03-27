@@ -62,12 +62,12 @@ func handleAPIError(err error) bool {
 		fmt.Fprintln(os.Stderr, "  Log in again:")
 		fmt.Fprintln(os.Stderr, "    spork login")
 	case 402:
-		fmt.Fprintln(os.Stderr, "💳 Payment method required")
+		fmt.Fprintln(os.Stderr, "💳 Subscription required")
 		fmt.Fprintln(os.Stderr)
-		fmt.Fprintln(os.Stderr, "  Add a payment method to start your 14-day free trial:")
+		fmt.Fprintln(os.Stderr, "  Subscribe to a plan to get started:")
 		fmt.Fprintln(os.Stderr, "    https://sporkops.com/billing?ref=cli")
 		fmt.Fprintln(os.Stderr)
-		fmt.Fprintln(os.Stderr, "  You won't be charged for 14 days. Plans start at $4/mo.")
+		fmt.Fprintln(os.Stderr, "  Plans start at $4/mo.")
 	case 403:
 		fmt.Fprintln(os.Stderr, "Access denied.")
 		fmt.Fprintln(os.Stderr)
