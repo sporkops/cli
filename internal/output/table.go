@@ -57,10 +57,10 @@ func ColorStatus(status string) string {
 		return status
 	}
 	switch status {
-	case "up":
-		return colorGreen + "up" + colorReset
-	case "down":
-		return colorRed + "down" + colorReset
+	case "up", "success":
+		return colorGreen + status + colorReset
+	case "down", "fail":
+		return colorRed + status + colorReset
 	case "pending":
 		return colorYellow + "pending" + colorReset
 	case "degraded":

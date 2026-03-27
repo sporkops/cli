@@ -26,16 +26,27 @@ func (e *APIError) Error() string {
 
 // Monitor represents an uptime monitor, aligned with the REST API.
 type Monitor struct {
-	ID             string `json:"id,omitempty"`
-	Name           string `json:"name,omitempty"`
-	Type           string `json:"type,omitempty"`
-	Target         string `json:"target,omitempty"`
-	Method         string `json:"method,omitempty"`
-	ExpectedStatus int    `json:"expected_status,omitempty"`
-	Interval       int    `json:"interval,omitempty"`
-	Paused         *bool  `json:"paused,omitempty"`
-	Status         string `json:"status,omitempty"`
-	LastCheckedAt  string `json:"last_checked_at,omitempty"`
+	ID              string            `json:"id,omitempty"`
+	Name            string            `json:"name,omitempty"`
+	Type            string            `json:"type,omitempty"`
+	Target          string            `json:"target,omitempty"`
+	Method          string            `json:"method,omitempty"`
+	ExpectedStatus  int               `json:"expected_status,omitempty"`
+	Interval        int               `json:"interval,omitempty"`
+	Timeout         int               `json:"timeout,omitempty"`
+	Regions         []string          `json:"regions,omitempty"`
+	Headers         map[string]string `json:"headers,omitempty"`
+	Body            string            `json:"body,omitempty"`
+	Keyword         string            `json:"keyword,omitempty"`
+	KeywordType     string            `json:"keyword_type,omitempty"`
+	SSLWarnDays     int               `json:"ssl_warn_days,omitempty"`
+	AlertChannelIDs []string          `json:"alert_channel_ids,omitempty"`
+	Tags            []string          `json:"tags,omitempty"`
+	Paused          *bool             `json:"paused,omitempty"`
+	Status          string            `json:"status,omitempty"`
+	LastCheckedAt   string            `json:"last_checked_at,omitempty"`
+	CreatedAt       string            `json:"created_at,omitempty"`
+	UpdatedAt       string            `json:"updated_at,omitempty"`
 }
 
 // Account represents the authenticated user's account info.
@@ -75,12 +86,16 @@ type MonitorResult struct {
 
 // AlertChannel represents an alert channel for notifications.
 type AlertChannel struct {
-	ID        string            `json:"id,omitempty"`
-	Name      string            `json:"name"`
-	Type      string            `json:"type"`
-	Config    map[string]string `json:"config"`
-	Verified  bool              `json:"verified,omitempty"`
-	CreatedAt string            `json:"created_at,omitempty"`
+	ID                 string            `json:"id,omitempty"`
+	Name               string            `json:"name"`
+	Type               string            `json:"type"`
+	Config             map[string]string `json:"config"`
+	Verified           bool              `json:"verified,omitempty"`
+	Secret             string            `json:"secret,omitempty"`
+	LastDeliveryStatus string            `json:"last_delivery_status,omitempty"`
+	LastDeliveryAt     string            `json:"last_delivery_at,omitempty"`
+	CreatedAt          string            `json:"created_at,omitempty"`
+	UpdatedAt          string            `json:"updated_at,omitempty"`
 }
 
 // dataEnvelope wraps the standard API response: {"data": ...}
@@ -236,10 +251,28 @@ func (c *Client) ListAlertChannels() ([]AlertChannel, error) {
 	return result, nil
 }
 
+// GetAlertChannel returns a single alert channel by ID.
+func (c *Client) GetAlertChannel(id string) (*AlertChannel, error) {
+	var result AlertChannel
+	if err := c.doSingle("GET", "/alert-channels/"+url.PathEscape(id), nil, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
 // CreateAlertChannel creates a new alert channel.
 func (c *Client) CreateAlertChannel(ch *AlertChannel) (*AlertChannel, error) {
 	var result AlertChannel
 	if err := c.doSingle("POST", "/alert-channels", ch, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// UpdateAlertChannel updates an alert channel by ID.
+func (c *Client) UpdateAlertChannel(id string, ch *AlertChannel) (*AlertChannel, error) {
+	var result AlertChannel
+	if err := c.doSingle("PUT", "/alert-channels/"+url.PathEscape(id), ch, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
