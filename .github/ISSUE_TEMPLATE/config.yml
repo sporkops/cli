@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions & Support
+    url: https://sporkops.com/docs
+    about: Check the docs or reach out for help.
