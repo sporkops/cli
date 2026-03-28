@@ -1,6 +1,25 @@
-# spork-cli
+# Spork CLI
 
-CLI for [Ping by Spork](https://sporkops.com) — uptime monitoring from your terminal.
+[![Build](https://github.com/sporkops/cli/actions/workflows/test.yml/badge.svg)](https://github.com/sporkops/cli/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/sporkops/cli)](https://github.com/sporkops/cli/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**Know when your site goes down before your customers do.**
+
+Spork is uptime monitoring that lives in your terminal. Add a monitor in seconds, get alerted when things break, and check status without leaving your workflow.
+
+<!-- TODO: Replace with an asciinema recording of the quickstart flow.
+     Record: asciinema rec demo.cast
+     Embed:  [![asciicast](https://asciinema.org/a/RECORDING_ID.svg)](https://asciinema.org/a/RECORDING_ID)
+     Or convert to GIF: agg demo.cast demo.gif -->
+
+## Quickstart
+
+```sh
+brew install sporkops/tap/spork && spork login && spork ping add https://yoursite.com
+```
+
+That's it. You're monitoring.
 
 ## Install
 
@@ -16,22 +35,6 @@ brew install sporkops/tap/spork
 curl -sSL https://sporkops.com | sh
 ```
 
-## Quick Start
-
-```sh
-# Log in (opens browser)
-spork login
-
-# Add a monitor
-spork ping add https://example.com
-
-# List monitors
-spork ping list
-
-# Check status
-spork ping status
-```
-
 ## Commands
 
 | Command | Description |
@@ -40,8 +43,12 @@ spork ping status
 | `spork ping add <url>` | Add an uptime monitor |
 | `spork ping list` | List all monitors |
 | `spork ping status` | Show current status |
-| `spork ping rm <id\|url>` | Remove a monitor |
 | `spork ping history <id\|url>` | Show check history |
+| `spork ping rm <id\|url>` | Remove a monitor |
+| `spork ping pause <id\|url>` | Pause a monitor |
+| `spork ping update <id\|url>` | Update monitor settings |
+| `spork apikey` | Manage API keys |
+| `spork alertchannel` | Manage alert channels |
 
 ### Flags
 
@@ -52,15 +59,23 @@ spork ping status
 - `--limit` — number of history records (on `ping history`)
 - `--force` — skip confirmation (on `ping rm`)
 
+## Infrastructure as Code
+
+Prefer Terraform? Use the [Spork Terraform Provider](https://registry.terraform.io/providers/sporkops/sporkops/latest) to manage monitors as code.
+
 ## Configuration
 
 Credentials are stored in `~/.config/spork/credentials.json` after login.
 
 The API base URL can be overridden with the `SPORK_API_URL` environment variable.
 
-## Docs
+## Documentation
 
-Full documentation: [https://sporkops.com/docs](https://sporkops.com/docs)
+Full docs: [sporkops.com/docs](https://sporkops.com/docs)
+
+---
+
+**Free to start. No credit card required.** [Sign up at sporkops.com →](https://sporkops.com)
 
 ## License
 
