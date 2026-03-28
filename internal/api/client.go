@@ -14,6 +14,10 @@ import (
 
 const defaultBaseURL = "https://api.sporkops.com/v1"
 
+// maxResponseBodySize is the maximum response body size (10MB) to prevent
+// unbounded memory allocation from malicious or misbehaving servers.
+const maxResponseBodySize = 10 * 1024 * 1024
+
 // APIError represents an error response from the Spork API.
 type APIError struct {
 	StatusCode int
@@ -143,11 +147,25 @@ func NewClient(token string) *Client {
 		fmt.Fprintf(os.Stderr, "Warning: SPORK_API_URL must use https://, ignoring %q\n", baseURL)
 		baseURL = defaultBaseURL
 	}
+
+	parsedBase, _ := url.Parse(baseURL)
+
 	return &Client{
 		baseURL: baseURL,
 		token:   token,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
+			// Strip the Authorization header when redirected to a different host
+			// to prevent credential leakage on cross-origin redirects.
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				if len(via) >= 10 {
+					return fmt.Errorf("too many redirects")
+				}
+				if parsedBase != nil && req.URL.Host != parsedBase.Host {
+					req.Header.Del("Authorization")
+				}
+				return nil
+			},
 		},
 	}
 }
@@ -326,7 +344,7 @@ func (c *Client) doList(method, path string, body any, result any) error {
 	return nil
 }
 
-// doRaw performs a request expecting no response body (e.g., DELETE → 204).
+// doRaw performs a request expecting no response body (e.g., DELETE -> 204).
 func (c *Client) doRaw(method, path string, body any) error {
 	_, err := c.rawRequest(method, path, body)
 	return err
@@ -334,6 +352,7 @@ func (c *Client) doRaw(method, path string, body any) error {
 
 // rawRequest performs the HTTP request and returns the raw response body.
 // It handles error status codes and returns a parsed APIError when appropriate.
+// Response bodies are capped at maxResponseBodySize to prevent unbounded memory use.
 func (c *Client) rawRequest(method, path string, body any) ([]byte, error) {
 	var reqBody io.Reader
 	if body != nil {
@@ -360,7 +379,9 @@ func (c *Client) rawRequest(method, path string, body any) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	// Cap the response body size to prevent unbounded memory allocation.
+	limitedBody := io.LimitReader(resp.Body, maxResponseBodySize)
+	respBody, err := io.ReadAll(limitedBody)
 	if err != nil {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
