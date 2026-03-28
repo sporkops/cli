@@ -5,14 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const defaultBaseURL = "https://api.sporkops.com/v1"
+
+const (
+	maxRetries    = 3
+	baseDelay     = 500 * time.Millisecond
+	maxRetryAfter = 60
+)
 
 // maxResponseBodySize is the maximum response body size (10MB) to prevent
 // unbounded memory allocation from malicious or misbehaving servers.
@@ -142,7 +150,6 @@ func NewClient(token string) *Client {
 	if baseURL == "" {
 		baseURL = defaultBaseURL
 	}
-	// Enforce HTTPS to prevent sending auth tokens over plaintext
 	if !strings.HasPrefix(baseURL, "https://") {
 		fmt.Fprintf(os.Stderr, "Warning: SPORK_API_URL must use https://, ignoring %q\n", baseURL)
 		baseURL = defaultBaseURL
@@ -155,8 +162,6 @@ func NewClient(token string) *Client {
 		token:   token,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
-			// Strip the Authorization header when redirected to a different host
-			// to prevent credential leakage on cross-origin redirects.
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				if len(via) >= 10 {
 					return fmt.Errorf("too many redirects")
@@ -170,7 +175,6 @@ func NewClient(token string) *Client {
 	}
 }
 
-// CreateMonitor creates a new uptime monitor.
 func (c *Client) CreateMonitor(m *Monitor) (*Monitor, error) {
 	var result Monitor
 	if err := c.doSingle("POST", "/monitors", m, &result); err != nil {
@@ -179,7 +183,6 @@ func (c *Client) CreateMonitor(m *Monitor) (*Monitor, error) {
 	return &result, nil
 }
 
-// ListMonitors returns all monitors for the authenticated user.
 func (c *Client) ListMonitors() ([]Monitor, error) {
 	var result []Monitor
 	if err := c.doList("GET", "/monitors", nil, &result); err != nil {
@@ -188,7 +191,6 @@ func (c *Client) ListMonitors() ([]Monitor, error) {
 	return result, nil
 }
 
-// GetMonitor returns a single monitor by ID.
 func (c *Client) GetMonitor(id string) (*Monitor, error) {
 	var result Monitor
 	if err := c.doSingle("GET", "/monitors/"+url.PathEscape(id), nil, &result); err != nil {
@@ -197,7 +199,6 @@ func (c *Client) GetMonitor(id string) (*Monitor, error) {
 	return &result, nil
 }
 
-// UpdateMonitor partially updates a monitor by ID.
 func (c *Client) UpdateMonitor(id string, m *Monitor) (*Monitor, error) {
 	var result Monitor
 	if err := c.doSingle("PATCH", "/monitors/"+url.PathEscape(id), m, &result); err != nil {
@@ -206,12 +207,10 @@ func (c *Client) UpdateMonitor(id string, m *Monitor) (*Monitor, error) {
 	return &result, nil
 }
 
-// DeleteMonitor deletes a monitor by ID.
 func (c *Client) DeleteMonitor(id string) error {
 	return c.doRaw("DELETE", "/monitors/"+url.PathEscape(id), nil)
 }
 
-// GetMonitorResults returns recent check results for a monitor.
 func (c *Client) GetMonitorResults(id string, limit int) ([]MonitorResult, error) {
 	path := fmt.Sprintf("/monitors/%s/results?per_page=%d", url.PathEscape(id), limit)
 	var result []MonitorResult
@@ -221,7 +220,6 @@ func (c *Client) GetMonitorResults(id string, limit int) ([]MonitorResult, error
 	return result, nil
 }
 
-// GetAccount returns the authenticated user's account info.
 func (c *Client) GetAccount() (*Account, error) {
 	var result Account
 	if err := c.doSingle("GET", "/me", nil, &result); err != nil {
@@ -230,7 +228,6 @@ func (c *Client) GetAccount() (*Account, error) {
 	return &result, nil
 }
 
-// CreateAPIKey creates a new API key. expiresDays=0 means no expiry.
 func (c *Client) CreateAPIKey(name string, expiresDays int) (*APIKey, error) {
 	req := struct {
 		Name          string `json:"name"`
@@ -246,7 +243,6 @@ func (c *Client) CreateAPIKey(name string, expiresDays int) (*APIKey, error) {
 	return &result, nil
 }
 
-// ListAPIKeys returns all API keys for the authenticated user.
 func (c *Client) ListAPIKeys() ([]APIKey, error) {
 	var result []APIKey
 	if err := c.doList("GET", "/api-keys", nil, &result); err != nil {
@@ -255,12 +251,10 @@ func (c *Client) ListAPIKeys() ([]APIKey, error) {
 	return result, nil
 }
 
-// DeleteAPIKey deletes an API key by ID.
 func (c *Client) DeleteAPIKey(id string) error {
 	return c.doRaw("DELETE", "/api-keys/"+url.PathEscape(id), nil)
 }
 
-// ListAlertChannels returns all alert channels for the authenticated user.
 func (c *Client) ListAlertChannels() ([]AlertChannel, error) {
 	var result []AlertChannel
 	if err := c.doList("GET", "/alert-channels", nil, &result); err != nil {
@@ -269,7 +263,6 @@ func (c *Client) ListAlertChannels() ([]AlertChannel, error) {
 	return result, nil
 }
 
-// GetAlertChannel returns a single alert channel by ID.
 func (c *Client) GetAlertChannel(id string) (*AlertChannel, error) {
 	var result AlertChannel
 	if err := c.doSingle("GET", "/alert-channels/"+url.PathEscape(id), nil, &result); err != nil {
@@ -278,7 +271,6 @@ func (c *Client) GetAlertChannel(id string) (*AlertChannel, error) {
 	return &result, nil
 }
 
-// CreateAlertChannel creates a new alert channel.
 func (c *Client) CreateAlertChannel(ch *AlertChannel) (*AlertChannel, error) {
 	var result AlertChannel
 	if err := c.doSingle("POST", "/alert-channels", ch, &result); err != nil {
@@ -287,7 +279,6 @@ func (c *Client) CreateAlertChannel(ch *AlertChannel) (*AlertChannel, error) {
 	return &result, nil
 }
 
-// UpdateAlertChannel updates an alert channel by ID.
 func (c *Client) UpdateAlertChannel(id string, ch *AlertChannel) (*AlertChannel, error) {
 	var result AlertChannel
 	if err := c.doSingle("PUT", "/alert-channels/"+url.PathEscape(id), ch, &result); err != nil {
@@ -296,23 +287,19 @@ func (c *Client) UpdateAlertChannel(id string, ch *AlertChannel) (*AlertChannel,
 	return &result, nil
 }
 
-// DeleteAlertChannel deletes an alert channel by ID.
 func (c *Client) DeleteAlertChannel(id string) error {
 	return c.doRaw("DELETE", "/alert-channels/"+url.PathEscape(id), nil)
 }
 
-// TestAlertChannel sends a test notification to an alert channel.
 func (c *Client) TestAlertChannel(id string) error {
 	return c.doRaw("POST", "/alert-channels/"+url.PathEscape(id)+"/test", nil)
 }
 
-// doSingle performs a request and unwraps a single-item {data: ...} envelope.
 func (c *Client) doSingle(method, path string, body, result any) error {
 	respBody, err := c.rawRequest(method, path, body)
 	if err != nil {
 		return err
 	}
-
 	if result != nil && len(respBody) > 0 {
 		var envelope dataEnvelope
 		if err := json.Unmarshal(respBody, &envelope); err != nil {
@@ -325,13 +312,11 @@ func (c *Client) doSingle(method, path string, body, result any) error {
 	return nil
 }
 
-// doList performs a request and unwraps a list {data: [...], meta: {...}} envelope.
 func (c *Client) doList(method, path string, body any, result any) error {
 	respBody, err := c.rawRequest(method, path, body)
 	if err != nil {
 		return err
 	}
-
 	if result != nil && len(respBody) > 0 {
 		var envelope listEnvelope
 		if err := json.Unmarshal(respBody, &envelope); err != nil {
@@ -344,62 +329,93 @@ func (c *Client) doList(method, path string, body any, result any) error {
 	return nil
 }
 
-// doRaw performs a request expecting no response body (e.g., DELETE -> 204).
 func (c *Client) doRaw(method, path string, body any) error {
 	_, err := c.rawRequest(method, path, body)
 	return err
 }
 
-// rawRequest performs the HTTP request and returns the raw response body.
-// It handles error status codes and returns a parsed APIError when appropriate.
+// rawRequest performs the HTTP request with retry logic for transient errors.
 // Response bodies are capped at maxResponseBodySize to prevent unbounded memory use.
 func (c *Client) rawRequest(method, path string, body any) ([]byte, error) {
-	var reqBody io.Reader
+	var jsonBytes []byte
 	if body != nil {
-		data, err := json.Marshal(body)
+		var err error
+		jsonBytes, err = json.Marshal(body)
 		if err != nil {
 			return nil, fmt.Errorf("marshaling request: %w", err)
 		}
-		reqBody = bytes.NewReader(data)
 	}
 
-	req, err := http.NewRequest(method, c.baseURL+path, reqBody)
-	if err != nil {
-		return nil, fmt.Errorf("creating request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("User-Agent", "spork-cli/"+Version)
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
+	reqURL := c.baseURL + path
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Cap the response body size to prevent unbounded memory allocation.
-	limitedBody := io.LimitReader(resp.Body, maxResponseBodySize)
-	respBody, err := io.ReadAll(limitedBody)
-	if err != nil {
-		return nil, fmt.Errorf("reading response: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
-		// Parse structured error: {"error": {"code": "...", "message": "..."}}
-		msg := string(respBody)
-		var errResp apiErrorEnvelope
-		if json.Unmarshal(respBody, &errResp) == nil && errResp.Error.Message != "" {
-			msg = errResp.Error.Message
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			delay := time.Duration(math.Pow(2, float64(attempt-1))) * baseDelay
+			time.Sleep(delay)
 		}
-		return nil, &APIError{StatusCode: resp.StatusCode, Message: msg}
+
+		var reqBody io.Reader
+		if jsonBytes != nil {
+			reqBody = bytes.NewReader(jsonBytes)
+		}
+
+		req, err := http.NewRequest(method, reqURL, reqBody)
+		if err != nil {
+			return nil, fmt.Errorf("creating request: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set("User-Agent", "spork-cli/"+Version)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("request failed: %w", err)
+			continue
+		}
+
+		limitedBody := io.LimitReader(resp.Body, maxResponseBodySize)
+		respBody, err := io.ReadAll(limitedBody)
+		resp.Body.Close()
+		if err != nil {
+			lastErr = fmt.Errorf("reading response: %w", err)
+			continue
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests ||
+			resp.StatusCode == http.StatusServiceUnavailable ||
+			resp.StatusCode == http.StatusGatewayTimeout {
+			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+				if seconds, parseErr := strconv.Atoi(retryAfter); parseErr == nil {
+					if seconds > maxRetryAfter {
+						seconds = maxRetryAfter
+					}
+					if seconds > 0 {
+						time.Sleep(time.Duration(seconds) * time.Second)
+					}
+				}
+			}
+			lastErr = fmt.Errorf("API error (HTTP %d): transient error", resp.StatusCode)
+			continue
+		}
+
+		if resp.StatusCode >= 400 {
+			msg := string(respBody)
+			var errResp apiErrorEnvelope
+			if json.Unmarshal(respBody, &errResp) == nil && errResp.Error.Message != "" {
+				msg = errResp.Error.Message
+			}
+			return nil, &APIError{StatusCode: resp.StatusCode, Message: msg}
+		}
+
+		if resp.StatusCode == http.StatusNoContent {
+			return nil, nil
+		}
+
+		return respBody, nil
 	}
 
-	// 204 No Content
-	if resp.StatusCode == http.StatusNoContent {
-		return nil, nil
-	}
-
-	return respBody, nil
+	return nil, fmt.Errorf("request failed after %d retries: %w", maxRetries, lastErr)
 }
