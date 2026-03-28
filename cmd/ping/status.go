@@ -3,6 +3,7 @@ package ping
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
@@ -43,7 +44,7 @@ var statusCmd = &cobra.Command{
 			return nil
 		}
 
-		headers := []string{"STATUS", "NAME", "TARGET", "LAST CHECKED"}
+		headers := []string{"STATUS", "NAME", "TYPE", "TARGET", "INTERVAL", "LAST CHECKED"}
 		rows := make([][]string, len(monitors))
 		for i, m := range monitors {
 			lastChecked := m.LastCheckedAt
@@ -53,7 +54,9 @@ var statusCmd = &cobra.Command{
 			rows[i] = []string{
 				output.ColorStatus(m.Status),
 				m.Name,
+				m.Type,
 				m.Target,
+				strconv.Itoa(m.Interval) + "s",
 				lastChecked,
 			}
 		}
