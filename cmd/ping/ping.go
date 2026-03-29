@@ -38,7 +38,7 @@ func requireAuth() (*api.Client, error) {
 		return nil, fmt.Errorf("loading credentials: %w", err)
 	}
 	if token == "" {
-		fmt.Fprintln(os.Stderr, "\u26a1 Login required")
+		fmt.Fprintln(os.Stderr, "⚡ Login required")
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, "  Sign up or log in to get started:")
 		fmt.Fprintln(os.Stderr, "    spork login")
@@ -62,12 +62,12 @@ func handleAPIError(err error) bool {
 
 	switch apiErr.StatusCode {
 	case 401:
-		fmt.Fprintln(os.Stderr, "\u26a1 Session expired")
+		fmt.Fprintln(os.Stderr, "⚡ Session expired")
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, "  Log in again:")
 		fmt.Fprintln(os.Stderr, "    spork login")
 	case 402:
-		fmt.Fprintln(os.Stderr, "\ud83d\udcb3 Subscription required")
+		fmt.Fprintln(os.Stderr, "💳 Subscription required")
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, "  Subscribe to a plan to get started:")
 		fmt.Fprintln(os.Stderr, "    https://sporkops.com/billing?ref=cli")
@@ -92,7 +92,7 @@ func handleAPIError(err error) bool {
 // If the argument looks like a URL, it fetches all monitors and finds the match.
 func resolveMonitorID(client *api.Client, idOrURL string) (string, string, error) {
 	if strings.Contains(idOrURL, "://") {
-		// Looks like a URL \u2014 resolve via list
+		// Looks like a URL — resolve via list
 		monitors, err := client.ListMonitors()
 		if err != nil {
 			return "", "", err
