@@ -63,21 +63,38 @@ Example:
 		if sp.CustomDomain != "" {
 			fmt.Printf("%-20s %s (%s)\n", "Custom Domain:", sp.CustomDomain, sp.DomainStatus)
 		}
+		fmt.Printf("%-20s %s\n", "Email Subscribers:", strconv.FormatBool(sp.EmailSubscribersEnabled))
+
+		if len(sp.ComponentGroups) > 0 {
+			fmt.Println()
+			fmt.Println("Component Groups:")
+			groupHeaders := []string{"ID", "NAME", "ORDER"}
+			groupRows := make([][]string, len(sp.ComponentGroups))
+			for i, g := range sp.ComponentGroups {
+				groupRows[i] = []string{g.ID, g.Name, strconv.Itoa(g.Order)}
+			}
+			output.PrintTable(groupHeaders, groupRows)
+		}
 
 		if len(sp.Components) > 0 {
 			fmt.Println()
 			fmt.Println("Components:")
-			headers := []string{"ORDER", "DISPLAY NAME", "MONITOR ID", "DESCRIPTION"}
+			headers := []string{"ORDER", "DISPLAY NAME", "MONITOR ID", "GROUP ID", "DESCRIPTION"}
 			rows := make([][]string, len(sp.Components))
 			for i, c := range sp.Components {
 				desc := "-"
 				if c.Description != "" {
 					desc = c.Description
 				}
+				groupID := "-"
+				if c.GroupID != "" {
+					groupID = c.GroupID
+				}
 				rows[i] = []string{
 					strconv.Itoa(c.Order),
 					c.DisplayName,
 					c.MonitorID,
+					groupID,
 					desc,
 				}
 			}

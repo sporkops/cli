@@ -12,15 +12,17 @@ import (
 )
 
 var (
-	updateName         string
-	updateSlug         string
-	updateTheme        string
-	updateAccentColor  string
-	updateLogoURL      string
-	updatePublic       bool
-	updateDomain       string
-	updateRemoveDomain bool
-	updateComponents   []string
+	updateName              string
+	updateSlug              string
+	updateTheme             string
+	updateAccentColor       string
+	updateLogoURL           string
+	updatePublic            bool
+	updateDomain            string
+	updateRemoveDomain      bool
+	updateComponents        []string
+	updateComponentGroups   []string
+	updateEmailSubscribers  bool
 )
 
 var updateCmd = &cobra.Command{
@@ -113,6 +115,18 @@ Note: --component replaces all existing components.`,
 			current.Components = components
 			hasChanges = true
 		}
+		if cmd.Flags().Changed("component-group") {
+			groups, err := parseComponentGroups(updateComponentGroups)
+			if err != nil {
+				return err
+			}
+			current.ComponentGroups = groups
+			hasChanges = true
+		}
+		if cmd.Flags().Changed("email-subscribers") {
+			current.EmailSubscribersEnabled = updateEmailSubscribers
+			hasChanges = true
+		}
 		if cmd.Flags().Changed("domain") {
 			hasDomainChange = true
 		}
@@ -122,7 +136,7 @@ Note: --component replaces all existing components.`,
 
 		if !hasChanges && !hasDomainChange {
 			fmt.Fprintln(os.Stderr, "Nothing to update. Specify at least one flag:")
-			fmt.Fprintln(os.Stderr, "  --name, --slug, --theme, --accent-color, --logo-url, --public, --domain, --component")
+			fmt.Fprintln(os.Stderr, "  --name, --slug, --theme, --accent-color, --logo-url, --public, --domain, --component, --component-group, --email-subscribers")
 			return fmt.Errorf("no changes specified")
 		}
 
@@ -130,13 +144,16 @@ Note: --component replaces all existing components.`,
 		if hasChanges {
 			// Clear server-managed fields before sending
 			sp := &api.StatusPage{
-				Name:        current.Name,
-				Slug:        current.Slug,
-				Theme:       current.Theme,
-				AccentColor: current.AccentColor,
-				LogoURL:     current.LogoURL,
-				IsPublic:    current.IsPublic,
-				Components:  current.Components,
+				Name:                    current.Name,
+				Slug:                    current.Slug,
+				Theme:                   current.Theme,
+				AccentColor:             current.AccentColor,
+				LogoURL:                 current.LogoURL,
+				WebhookURL:              current.WebhookURL,
+				IsPublic:                current.IsPublic,
+				Components:              current.Components,
+				ComponentGroups:         current.ComponentGroups,
+				EmailSubscribersEnabled: current.EmailSubscribersEnabled,
 			}
 			result, err := client.UpdateStatusPage(id, sp)
 			if err != nil {
@@ -199,5 +216,7 @@ func init() {
 	updateCmd.Flags().BoolVar(&updatePublic, "public", true, "whether the status page is publicly accessible")
 	updateCmd.Flags().StringVar(&updateDomain, "domain", "", "set custom domain (requires CNAME to status.sporkops.com)")
 	updateCmd.Flags().BoolVar(&updateRemoveDomain, "remove-domain", false, "remove the custom domain")
-	updateCmd.Flags().StringArrayVar(&updateComponents, "component", nil, "component as monitor_id=<id>,name=<name>[,description=<text>][,order=<n>] (replaces all)")
+	updateCmd.Flags().StringArrayVar(&updateComponents, "component", nil, "component as monitor_id=<id>,name=<name>[,description=<text>][,group_id=<id>][,order=<n>] (replaces all)")
+	updateCmd.Flags().StringArrayVar(&updateComponentGroups, "component-group", nil, "component group as name=<name>[,order=<n>] (replaces all)")
+	updateCmd.Flags().BoolVar(&updateEmailSubscribers, "email-subscribers", false, "enable/disable email subscriber notifications")
 }
