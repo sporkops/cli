@@ -125,6 +125,7 @@ type StatusPage struct {
 	WebhookURL              string            `json:"webhook_url,omitempty"`
 	EmailSubscribersEnabled bool              `json:"email_subscribers_enabled"`
 	IsPublic                bool              `json:"is_public"`
+	Password                string            `json:"password,omitempty"`
 	CreatedAt               string            `json:"created_at,omitempty"`
 	UpdatedAt               string            `json:"updated_at,omitempty"`
 }

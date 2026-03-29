@@ -13,16 +13,17 @@ import (
 )
 
 var (
-	createName              string
-	createSlug              string
-	createTheme             string
-	createAccentColor       string
-	createLogoURL           string
-	createPublic            bool
-	createDomain            string
-	createComponents        []string
-	createComponentGroups   []string
-	createEmailSubscribers  bool
+	createName             string
+	createSlug             string
+	createTheme            string
+	createAccentColor      string
+	createLogoURL          string
+	createPublic           bool
+	createPassword         string
+	createDomain           string
+	createComponents       []string
+	createComponentGroups  []string
+	createEmailSubscribers bool
 )
 
 var slugRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$`)
@@ -92,6 +93,7 @@ Component group format: name=<name>[,order=<n>]`,
 			AccentColor:             createAccentColor,
 			LogoURL:                 createLogoURL,
 			IsPublic:                createPublic,
+			Password:                createPassword,
 			Components:              components,
 			ComponentGroups:         groups,
 			EmailSubscribersEnabled: createEmailSubscribers,
@@ -137,6 +139,7 @@ func init() {
 	createCmd.Flags().StringVar(&createAccentColor, "accent-color", "", "accent color as hex (e.g. #0066ff)")
 	createCmd.Flags().StringVar(&createLogoURL, "logo-url", "", "logo URL (must be https)")
 	createCmd.Flags().BoolVar(&createPublic, "public", true, "whether the status page is publicly accessible")
+	createCmd.Flags().StringVar(&createPassword, "password", "", "password for private status pages (used when --public=false)")
 	createCmd.Flags().StringVar(&createDomain, "domain", "", "custom domain (requires CNAME to status.sporkops.com)")
 	createCmd.Flags().StringArrayVar(&createComponents, "component", nil, "component as monitor_id=<id>,name=<name>[,description=<text>][,group_id=<id>][,order=<n>] (repeatable)")
 	createCmd.Flags().StringArrayVar(&createComponentGroups, "component-group", nil, "component group as name=<name>[,order=<n>] (repeatable)")
