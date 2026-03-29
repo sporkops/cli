@@ -27,7 +27,7 @@ brews:
     directory: Formula
     name: spork
     homepage: https://sporkops.com
-    description: "CLI for Ping by Spork — uptime monitoring"
+    description: "Spork CLI — uptime monitoring from your terminal"
     license: MIT
     install: |
       bin.install "spork"
