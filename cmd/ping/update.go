@@ -187,7 +187,7 @@ var updateCmd = &cobra.Command{
 		if label == "" {
 			label = name
 		}
-		fmt.Printf("\u2713 Monitor updated: %s (%s)\n", label, result.Target)
+		fmt.Printf("✓ Monitor updated: %s (%s)\n", label, result.Target)
 		return nil
 	},
 }

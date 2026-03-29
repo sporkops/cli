@@ -59,7 +59,7 @@ Example:
 			return err
 		}
 
-		fmt.Printf("\u2713 Status page removed: %s\n", label)
+		fmt.Printf("✓ Status page removed: %s\n", label)
 		return nil
 	},
 }

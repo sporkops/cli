@@ -121,7 +121,7 @@ Example:
 			return err
 		}
 
-		fmt.Printf("\u2713 Monitor added: %s (%s)\n", result.Name, result.Target)
+		fmt.Printf("✓ Monitor added: %s (%s)\n", result.Name, result.Target)
 		fmt.Printf("  Checking every %ds\n", result.Interval)
 		fmt.Println()
 		fmt.Println("  View dashboard: https://sporkops.com")

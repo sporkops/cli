@@ -175,6 +175,7 @@ func NewClient(token string) *Client {
 	if baseURL == "" {
 		baseURL = defaultBaseURL
 	}
+	// Enforce HTTPS to prevent sending auth tokens over plaintext.
 	if !strings.HasPrefix(baseURL, "https://") {
 		fmt.Fprintf(os.Stderr, "Warning: SPORK_API_URL must use https://, ignoring %q\n", baseURL)
 		baseURL = defaultBaseURL
@@ -187,6 +188,8 @@ func NewClient(token string) *Client {
 		token:   token,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
+			// Strip the Authorization header when redirected to a different host
+			// to prevent credential leakage on cross-origin redirects.
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				if len(via) >= 10 {
 					return fmt.Errorf("too many redirects")
@@ -202,6 +205,7 @@ func NewClient(token string) *Client {
 
 // Monitor CRUD
 
+// CreateMonitor creates a new uptime monitor.
 func (c *Client) CreateMonitor(m *Monitor) (*Monitor, error) {
 	var result Monitor
 	if err := c.doSingle("POST", "/monitors", m, &result); err != nil {
@@ -210,14 +214,16 @@ func (c *Client) CreateMonitor(m *Monitor) (*Monitor, error) {
 	return &result, nil
 }
 
+// ListMonitors returns all monitors for the authenticated user.
 func (c *Client) ListMonitors() ([]Monitor, error) {
 	var result []Monitor
-	if err := c.doList("GET", "/monitors", nil, &result); err != nil {
+	if err := c.doList("GET", "/monitors?per_page=100", nil, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
+// GetMonitor returns a single monitor by ID.
 func (c *Client) GetMonitor(id string) (*Monitor, error) {
 	var result Monitor
 	if err := c.doSingle("GET", "/monitors/"+url.PathEscape(id), nil, &result); err != nil {
@@ -226,6 +232,7 @@ func (c *Client) GetMonitor(id string) (*Monitor, error) {
 	return &result, nil
 }
 
+// UpdateMonitor partially updates a monitor by ID.
 func (c *Client) UpdateMonitor(id string, m *Monitor) (*Monitor, error) {
 	var result Monitor
 	if err := c.doSingle("PATCH", "/monitors/"+url.PathEscape(id), m, &result); err != nil {
@@ -234,10 +241,12 @@ func (c *Client) UpdateMonitor(id string, m *Monitor) (*Monitor, error) {
 	return &result, nil
 }
 
+// DeleteMonitor deletes a monitor by ID.
 func (c *Client) DeleteMonitor(id string) error {
 	return c.doRaw("DELETE", "/monitors/"+url.PathEscape(id), nil)
 }
 
+// GetMonitorResults returns recent check results for a monitor.
 func (c *Client) GetMonitorResults(id string, limit int) ([]MonitorResult, error) {
 	path := fmt.Sprintf("/monitors/%s/results?per_page=%d", url.PathEscape(id), limit)
 	var result []MonitorResult
@@ -249,6 +258,7 @@ func (c *Client) GetMonitorResults(id string, limit int) ([]MonitorResult, error
 
 // Account
 
+// GetAccount returns the authenticated user's account info.
 func (c *Client) GetAccount() (*Account, error) {
 	var result Account
 	if err := c.doSingle("GET", "/me", nil, &result); err != nil {
@@ -259,6 +269,7 @@ func (c *Client) GetAccount() (*Account, error) {
 
 // API Keys
 
+// CreateAPIKey creates a new API key. expiresDays=0 means no expiry.
 func (c *Client) CreateAPIKey(name string, expiresDays int) (*APIKey, error) {
 	req := struct {
 		Name          string `json:"name"`
@@ -274,28 +285,32 @@ func (c *Client) CreateAPIKey(name string, expiresDays int) (*APIKey, error) {
 	return &result, nil
 }
 
+// ListAPIKeys returns all API keys for the authenticated user.
 func (c *Client) ListAPIKeys() ([]APIKey, error) {
 	var result []APIKey
-	if err := c.doList("GET", "/api-keys", nil, &result); err != nil {
+	if err := c.doList("GET", "/api-keys?per_page=100", nil, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
+// DeleteAPIKey deletes an API key by ID.
 func (c *Client) DeleteAPIKey(id string) error {
 	return c.doRaw("DELETE", "/api-keys/"+url.PathEscape(id), nil)
 }
 
 // Alert Channels
 
+// ListAlertChannels returns all alert channels for the authenticated user.
 func (c *Client) ListAlertChannels() ([]AlertChannel, error) {
 	var result []AlertChannel
-	if err := c.doList("GET", "/alert-channels", nil, &result); err != nil {
+	if err := c.doList("GET", "/alert-channels?per_page=100", nil, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
+// GetAlertChannel returns a single alert channel by ID.
 func (c *Client) GetAlertChannel(id string) (*AlertChannel, error) {
 	var result AlertChannel
 	if err := c.doSingle("GET", "/alert-channels/"+url.PathEscape(id), nil, &result); err != nil {
@@ -304,6 +319,7 @@ func (c *Client) GetAlertChannel(id string) (*AlertChannel, error) {
 	return &result, nil
 }
 
+// CreateAlertChannel creates a new alert channel.
 func (c *Client) CreateAlertChannel(ch *AlertChannel) (*AlertChannel, error) {
 	var result AlertChannel
 	if err := c.doSingle("POST", "/alert-channels", ch, &result); err != nil {
@@ -312,6 +328,7 @@ func (c *Client) CreateAlertChannel(ch *AlertChannel) (*AlertChannel, error) {
 	return &result, nil
 }
 
+// UpdateAlertChannel updates an alert channel by ID.
 func (c *Client) UpdateAlertChannel(id string, ch *AlertChannel) (*AlertChannel, error) {
 	var result AlertChannel
 	if err := c.doSingle("PUT", "/alert-channels/"+url.PathEscape(id), ch, &result); err != nil {
@@ -320,16 +337,19 @@ func (c *Client) UpdateAlertChannel(id string, ch *AlertChannel) (*AlertChannel,
 	return &result, nil
 }
 
+// DeleteAlertChannel deletes an alert channel by ID.
 func (c *Client) DeleteAlertChannel(id string) error {
 	return c.doRaw("DELETE", "/alert-channels/"+url.PathEscape(id), nil)
 }
 
+// TestAlertChannel sends a test notification to an alert channel.
 func (c *Client) TestAlertChannel(id string) error {
 	return c.doRaw("POST", "/alert-channels/"+url.PathEscape(id)+"/test", nil)
 }
 
 // Status Pages
 
+// CreateStatusPage creates a new public status page.
 func (c *Client) CreateStatusPage(sp *StatusPage) (*StatusPage, error) {
 	var result StatusPage
 	if err := c.doSingle("POST", "/status-pages", sp, &result); err != nil {
@@ -338,14 +358,16 @@ func (c *Client) CreateStatusPage(sp *StatusPage) (*StatusPage, error) {
 	return &result, nil
 }
 
+// ListStatusPages returns all status pages for the authenticated user.
 func (c *Client) ListStatusPages() ([]StatusPage, error) {
 	var result []StatusPage
-	if err := c.doList("GET", "/status-pages", nil, &result); err != nil {
+	if err := c.doList("GET", "/status-pages?per_page=100", nil, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
+// GetStatusPage returns a single status page by ID.
 func (c *Client) GetStatusPage(id string) (*StatusPage, error) {
 	var result StatusPage
 	if err := c.doSingle("GET", "/status-pages/"+url.PathEscape(id), nil, &result); err != nil {
@@ -354,6 +376,7 @@ func (c *Client) GetStatusPage(id string) (*StatusPage, error) {
 	return &result, nil
 }
 
+// UpdateStatusPage updates a status page by ID (full replace via PUT).
 func (c *Client) UpdateStatusPage(id string, sp *StatusPage) (*StatusPage, error) {
 	var result StatusPage
 	if err := c.doSingle("PUT", "/status-pages/"+url.PathEscape(id), sp, &result); err != nil {
@@ -362,21 +385,25 @@ func (c *Client) UpdateStatusPage(id string, sp *StatusPage) (*StatusPage, error
 	return &result, nil
 }
 
+// DeleteStatusPage deletes a status page by ID.
 func (c *Client) DeleteStatusPage(id string) error {
 	return c.doRaw("DELETE", "/status-pages/"+url.PathEscape(id), nil)
 }
 
+// SetCustomDomain sets a custom domain on a status page.
 func (c *Client) SetCustomDomain(statusPageID, domain string) error {
 	body := map[string]string{"domain": domain}
 	return c.doRaw("POST", "/status-pages/"+url.PathEscape(statusPageID)+"/custom-domain", body)
 }
 
+// RemoveCustomDomain removes the custom domain from a status page.
 func (c *Client) RemoveCustomDomain(statusPageID string) error {
 	return c.doRaw("DELETE", "/status-pages/"+url.PathEscape(statusPageID)+"/custom-domain", nil)
 }
 
 // HTTP helpers
 
+// doSingle performs a request and unwraps a single-item {data: ...} envelope.
 func (c *Client) doSingle(method, path string, body, result any) error {
 	respBody, err := c.rawRequest(method, path, body)
 	if err != nil {
@@ -394,6 +421,7 @@ func (c *Client) doSingle(method, path string, body, result any) error {
 	return nil
 }
 
+// doList performs a request and unwraps a list {data: [...], meta: {...}} envelope.
 func (c *Client) doList(method, path string, body any, result any) error {
 	respBody, err := c.rawRequest(method, path, body)
 	if err != nil {
@@ -411,6 +439,7 @@ func (c *Client) doList(method, path string, body any, result any) error {
 	return nil
 }
 
+// doRaw performs a request expecting no response body (e.g., DELETE -> 204).
 func (c *Client) doRaw(method, path string, body any) error {
 	_, err := c.rawRequest(method, path, body)
 	return err

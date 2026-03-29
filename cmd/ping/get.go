@@ -3,6 +3,7 @@ package ping
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/sporkops/cli/internal/output"
@@ -57,6 +58,12 @@ Example:
 		fmt.Printf("%-20s %d\n", "Expected Status:", monitor.ExpectedStatus)
 		fmt.Printf("%-20s %ds\n", "Interval:", monitor.Interval)
 		fmt.Printf("%-20s %ds\n", "Timeout:", monitor.Timeout)
+
+		paused := false
+		if monitor.Paused != nil {
+			paused = *monitor.Paused
+		}
+		fmt.Printf("%-20s %s\n", "Paused:", strconv.FormatBool(paused))
 
 		if len(monitor.Regions) > 0 {
 			fmt.Printf("%-20s %s\n", "Regions:", strings.Join(monitor.Regions, ", "))

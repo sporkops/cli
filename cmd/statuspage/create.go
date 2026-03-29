@@ -106,7 +106,7 @@ Component format: monitor_id=<id>,name=<display_name>[,description=<text>][,orde
 			return output.PrintJSON(result)
 		}
 
-		fmt.Printf("\u2713 Status page created: %s\n", result.Name)
+		fmt.Printf("✓ Status page created: %s\n", result.Name)
 		fmt.Printf("  URL: https://%s.status.sporkops.com\n", result.Slug)
 		if result.CustomDomain != "" {
 			fmt.Printf("  Custom domain: %s (status: %s)\n", result.CustomDomain, result.DomainStatus)

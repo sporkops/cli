@@ -28,7 +28,7 @@ func JSONOutput() bool {
 
 var rootCmd = &cobra.Command{
 	Use:     "spork",
-	Short:   "CLI for Ping by Spork \u2014 uptime monitoring",
+	Short:   "CLI for Ping by Spork — uptime monitoring",
 	Long:    "Manage your uptime monitors from the terminal.\n\nDocs: https://sporkops.com/docs",
 	Version: version,
 }

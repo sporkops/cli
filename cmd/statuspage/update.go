@@ -182,7 +182,7 @@ Note: --component replaces all existing components.`,
 		if label == "" {
 			label = name
 		}
-		fmt.Printf("\u2713 Status page updated: %s\n", label)
+		fmt.Printf("✓ Status page updated: %s\n", label)
 		if current.CustomDomain != "" {
 			fmt.Printf("  Custom domain: %s (%s)\n", current.CustomDomain, current.DomainStatus)
 		}
