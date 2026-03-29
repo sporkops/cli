@@ -7,6 +7,7 @@ import (
 	"github.com/sporkops/cli/cmd/alertchannel"
 	"github.com/sporkops/cli/cmd/apikey"
 	"github.com/sporkops/cli/cmd/ping"
+	"github.com/sporkops/cli/cmd/statuspage"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +28,7 @@ func JSONOutput() bool {
 
 var rootCmd = &cobra.Command{
 	Use:     "spork",
-	Short:   "CLI for Ping by Spork — uptime monitoring",
+	Short:   "CLI for Ping by Spork \u2014 uptime monitoring",
 	Long:    "Manage your uptime monitors from the terminal.\n\nDocs: https://sporkops.com/docs",
 	Version: version,
 }
@@ -41,6 +42,7 @@ func init() {
 	rootCmd.AddCommand(ping.Cmd)
 	rootCmd.AddCommand(apikey.Cmd)
 	rootCmd.AddCommand(alertchannel.Cmd)
+	rootCmd.AddCommand(statuspage.Cmd)
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versionCmd)
 }
