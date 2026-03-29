@@ -3,7 +3,6 @@ module github.com/sporkops/cli
 go 1.24.7
 
 require (
-	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/term v0.28.0
 )

@@ -45,12 +45,13 @@ var listCmd = &cobra.Command{
 			return nil
 		}
 
-		headers := []string{"ID", "NAME", "TARGET", "INTERVAL", "STATUS"}
+		headers := []string{"ID", "NAME", "TYPE", "TARGET", "INTERVAL", "STATUS"}
 		rows := make([][]string, len(monitors))
 		for i, m := range monitors {
 			rows[i] = []string{
 				m.ID,
 				m.Name,
+				m.Type,
 				m.Target,
 				strconv.Itoa(m.Interval) + "s",
 				output.ColorStatus(m.Status),

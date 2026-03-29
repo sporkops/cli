@@ -37,7 +37,7 @@ Example:
   spork ping add https://api.example.com/health --name "API Health" --interval 300
   spork ping add https://example.com --type keyword --keyword "OK"
   spork ping add https://example.com --type ssl --ssl-warn-days 30`,
-	Args:  cobra.ExactArgs(1),
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := requireAuth()
 		if err != nil {
@@ -51,12 +51,39 @@ Example:
 			return fmt.Errorf("invalid URL: %s", rawURL)
 		}
 
+		// Validate flags to catch errors before hitting the API.
+		validTypes := map[string]bool{"http": true, "ssl": true, "dns": true, "keyword": true, "tcp": true, "ping": true}
+		if !validTypes[addType] {
+			return fmt.Errorf("invalid --type %q: must be one of http, ssl, dns, keyword, tcp, ping", addType)
+		}
+		validMethods := map[string]bool{"GET": true, "HEAD": true, "POST": true, "PUT": true}
+		if !validMethods[addMethod] {
+			return fmt.Errorf("invalid --method %q: must be one of GET, HEAD, POST, PUT", addMethod)
+		}
+		if addInterval < 60 || addInterval > 86400 {
+			return fmt.Errorf("invalid --interval %d: must be between 60 and 86400", addInterval)
+		}
+		if addInterval%60 != 0 {
+			return fmt.Errorf("invalid --interval %d: must be a multiple of 60", addInterval)
+		}
+		if addExpectedStatus < 100 || addExpectedStatus > 599 {
+			return fmt.Errorf("invalid --expected-status %d: must be between 100 and 599", addExpectedStatus)
+		}
+		if addTimeout < 5 || addTimeout > 120 {
+			return fmt.Errorf("invalid --timeout %d: must be between 5 and 120", addTimeout)
+		}
+		if addKeywordType != "" && addKeywordType != "exists" && addKeywordType != "not_exists" {
+			return fmt.Errorf("invalid --keyword-type %q: must be exists or not_exists", addKeywordType)
+		}
+		if addType == "keyword" && addKeyword == "" {
+			return fmt.Errorf("--keyword is required when --type is keyword")
+		}
+
 		name := addName
 		if name == "" {
 			name = parsed.Hostname()
 		}
 
-		// Parse --headers key=value pairs into a map.
 		headers := make(map[string]string)
 		for _, kv := range addHeaders {
 			parts := strings.SplitN(kv, "=", 2)

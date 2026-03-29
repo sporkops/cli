@@ -49,7 +49,43 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 
-		// Build partial update — only include fields that were explicitly set.
+		// Validate flags that were explicitly set.
+		if cmd.Flags().Changed("type") {
+			validTypes := map[string]bool{"http": true, "ssl": true, "dns": true, "keyword": true, "tcp": true, "ping": true}
+			if !validTypes[updateType] {
+				return fmt.Errorf("invalid --type %q: must be one of http, ssl, dns, keyword, tcp, ping", updateType)
+			}
+		}
+		if cmd.Flags().Changed("method") {
+			validMethods := map[string]bool{"GET": true, "HEAD": true, "POST": true, "PUT": true}
+			if !validMethods[updateMethod] {
+				return fmt.Errorf("invalid --method %q: must be one of GET, HEAD, POST, PUT", updateMethod)
+			}
+		}
+		if cmd.Flags().Changed("interval") {
+			if updateInterval < 60 || updateInterval > 86400 {
+				return fmt.Errorf("invalid --interval %d: must be between 60 and 86400", updateInterval)
+			}
+			if updateInterval%60 != 0 {
+				return fmt.Errorf("invalid --interval %d: must be a multiple of 60", updateInterval)
+			}
+		}
+		if cmd.Flags().Changed("expected-status") {
+			if updateExpectedStatus < 100 || updateExpectedStatus > 599 {
+				return fmt.Errorf("invalid --expected-status %d: must be between 100 and 599", updateExpectedStatus)
+			}
+		}
+		if cmd.Flags().Changed("timeout") {
+			if updateTimeout < 5 || updateTimeout > 120 {
+				return fmt.Errorf("invalid --timeout %d: must be between 5 and 120", updateTimeout)
+			}
+		}
+		if cmd.Flags().Changed("keyword-type") {
+			if updateKeywordType != "exists" && updateKeywordType != "not_exists" {
+				return fmt.Errorf("invalid --keyword-type %q: must be exists or not_exists", updateKeywordType)
+			}
+		}
+
 		update := &api.Monitor{}
 		hasChanges := false
 

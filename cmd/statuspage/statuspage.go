@@ -1,4 +1,4 @@
-package ping
+package statuspage
 
 import (
 	"errors"
@@ -11,27 +11,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Cmd is the `spork ping` parent command.
+// Cmd is the `spork status-page` parent command.
 var Cmd = &cobra.Command{
-	Use:   "ping",
-	Short: "Manage uptime monitors",
-	Long:  "Add, list, and manage uptime monitors for your sites and APIs.",
+	Use:     "status-page",
+	Aliases: []string{"sp"},
+	Short:   "Manage status pages",
+	Long:    "Create, list, and manage public status pages for your monitors.",
 }
 
 func init() {
-	Cmd.AddCommand(addCmd)
-	Cmd.AddCommand(getCmd)
+	Cmd.AddCommand(createCmd)
 	Cmd.AddCommand(listCmd)
-	Cmd.AddCommand(statusCmd)
+	Cmd.AddCommand(getCmd)
 	Cmd.AddCommand(updateCmd)
 	Cmd.AddCommand(rmCmd)
-	Cmd.AddCommand(historyCmd)
-	Cmd.AddCommand(pauseCmd)
-	Cmd.AddCommand(unpauseCmd)
 }
 
-// requireAuth loads the stored token and returns an API client.
-// If no token is found, it prints login instructions and returns an error.
 func requireAuth() (*api.Client, error) {
 	token, err := auth.LoadToken()
 	if err != nil {
@@ -52,14 +47,11 @@ func requireAuth() (*api.Client, error) {
 	return api.NewClient(token), nil
 }
 
-// handleAPIError prints user-friendly messages for common API errors.
-// Returns true if the error was handled (printed), false otherwise.
 func handleAPIError(err error) bool {
 	var apiErr *api.APIError
 	if !errors.As(err, &apiErr) {
 		return false
 	}
-
 	switch apiErr.StatusCode {
 	case 401:
 		fmt.Fprintln(os.Stderr, "⚡ Session expired")
@@ -84,25 +76,30 @@ func handleAPIError(err error) bool {
 	default:
 		return false
 	}
-
 	return true
 }
 
-// resolveMonitorID resolves an ID-or-URL argument to a monitor ID.
-// If the argument looks like a URL, it fetches all monitors and finds the match.
-func resolveMonitorID(client *api.Client, idOrURL string) (string, string, error) {
-	if strings.Contains(idOrURL, "://") {
-		// Looks like a URL — resolve via list
-		monitors, err := client.ListMonitors()
-		if err != nil {
+func resolveStatusPageID(client *api.Client, nameOrID string) (string, string, error) {
+	if !strings.Contains(nameOrID, " ") {
+		sp, err := client.GetStatusPage(nameOrID)
+		if err == nil {
+			return sp.ID, sp.Name, nil
+		}
+		var apiErr *api.APIError
+		if errors.As(err, &apiErr) && apiErr.StatusCode == 404 {
+			// Fall through to name search
+		} else {
 			return "", "", err
 		}
-		for _, m := range monitors {
-			if m.Target == idOrURL {
-				return m.ID, m.Name, nil
-			}
-		}
-		return "", "", fmt.Errorf("no monitor found for URL: %s", idOrURL)
 	}
-	return idOrURL, "", nil
+	pages, err := client.ListStatusPages()
+	if err != nil {
+		return "", "", err
+	}
+	for _, p := range pages {
+		if p.Name == nameOrID || p.Slug == nameOrID {
+			return p.ID, p.Name, nil
+		}
+	}
+	return "", "", fmt.Errorf("no status page found for: %s", nameOrID)
 }
