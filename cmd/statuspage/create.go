@@ -13,14 +13,16 @@ import (
 )
 
 var (
-	createName        string
-	createSlug        string
-	createTheme       string
-	createAccentColor string
-	createLogoURL     string
-	createPublic      bool
-	createDomain      string
-	createComponents  []string
+	createName              string
+	createSlug              string
+	createTheme             string
+	createAccentColor       string
+	createLogoURL           string
+	createPublic            bool
+	createDomain            string
+	createComponents        []string
+	createComponentGroups   []string
+	createEmailSubscribers  bool
 )
 
 var slugRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$`)
@@ -36,8 +38,12 @@ Examples:
   spork status-page create --name "Acme Status" --slug acme-status \
     --component monitor_id=mon_abc,name=API,order=1 \
     --component monitor_id=mon_def,name=Website,order=2
+  spork status-page create --name "Acme Status" --slug acme-status \
+    --component-group name=Core,order=1 \
+    --component monitor_id=mon_abc,name=API,group_id=grp_1,order=1
 
-Component format: monitor_id=<id>,name=<display_name>[,description=<text>][,order=<n>]`,
+Component format: monitor_id=<id>,name=<display_name>[,description=<text>][,group_id=<id>][,order=<n>]
+Component group format: name=<name>[,order=<n>]`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := requireAuth()
 		if err != nil {
@@ -73,14 +79,22 @@ Component format: monitor_id=<id>,name=<display_name>[,description=<text>][,orde
 			return err
 		}
 
+		// Parse component groups
+		groups, err := parseComponentGroups(createComponentGroups)
+		if err != nil {
+			return err
+		}
+
 		sp := &api.StatusPage{
-			Name:        createName,
-			Slug:        createSlug,
-			Theme:       createTheme,
-			AccentColor: createAccentColor,
-			LogoURL:     createLogoURL,
-			IsPublic:    createPublic,
-			Components:  components,
+			Name:                    createName,
+			Slug:                    createSlug,
+			Theme:                   createTheme,
+			AccentColor:             createAccentColor,
+			LogoURL:                 createLogoURL,
+			IsPublic:                createPublic,
+			Components:              components,
+			ComponentGroups:         groups,
+			EmailSubscribersEnabled: createEmailSubscribers,
 		}
 
 		result, err := client.CreateStatusPage(sp)
@@ -124,7 +138,9 @@ func init() {
 	createCmd.Flags().StringVar(&createLogoURL, "logo-url", "", "logo URL (must be https)")
 	createCmd.Flags().BoolVar(&createPublic, "public", true, "whether the status page is publicly accessible")
 	createCmd.Flags().StringVar(&createDomain, "domain", "", "custom domain (requires CNAME to status.sporkops.com)")
-	createCmd.Flags().StringArrayVar(&createComponents, "component", nil, "component as monitor_id=<id>,name=<name>[,description=<text>][,order=<n>] (repeatable)")
+	createCmd.Flags().StringArrayVar(&createComponents, "component", nil, "component as monitor_id=<id>,name=<name>[,description=<text>][,group_id=<id>][,order=<n>] (repeatable)")
+	createCmd.Flags().StringArrayVar(&createComponentGroups, "component-group", nil, "component group as name=<name>[,order=<n>] (repeatable)")
+	createCmd.Flags().BoolVar(&createEmailSubscribers, "email-subscribers", false, "enable email subscriber notifications")
 	createCmd.MarkFlagRequired("name")
 	createCmd.MarkFlagRequired("slug")
 }
@@ -160,6 +176,7 @@ func parseComponents(args []string) ([]api.StatusComponent, error) {
 			MonitorID:   monitorID,
 			DisplayName: name,
 			Description: fields["description"],
+			GroupID:     fields["group_id"],
 			Order:       i,
 		}
 
@@ -175,4 +192,46 @@ func parseComponents(args []string) ([]api.StatusComponent, error) {
 	}
 
 	return components, nil
+}
+
+// parseComponentGroups parses --component-group flags into ComponentGroup structs.
+// Format: name=<name>[,order=<n>]
+func parseComponentGroups(args []string) ([]api.ComponentGroup, error) {
+	if len(args) == 0 {
+		return nil, nil
+	}
+
+	groups := make([]api.ComponentGroup, 0, len(args))
+	for i, arg := range args {
+		fields := make(map[string]string)
+		for _, pair := range strings.Split(arg, ",") {
+			parts := strings.SplitN(pair, "=", 2)
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("invalid component-group format %q: expected key=value pairs separated by commas", arg)
+			}
+			fields[parts[0]] = parts[1]
+		}
+
+		name, ok := fields["name"]
+		if !ok || name == "" {
+			return nil, fmt.Errorf("component-group %d: name is required", i+1)
+		}
+
+		group := api.ComponentGroup{
+			Name:  name,
+			Order: i,
+		}
+
+		if orderStr, ok := fields["order"]; ok {
+			order, err := strconv.Atoi(orderStr)
+			if err != nil {
+				return nil, fmt.Errorf("component-group %d: invalid order %q", i+1, orderStr)
+			}
+			group.Order = order
+		}
+
+		groups = append(groups, group)
+	}
+
+	return groups, nil
 }

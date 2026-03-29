@@ -112,18 +112,28 @@ type AlertChannel struct {
 
 // StatusPage represents a public status page.
 type StatusPage struct {
-	ID           string            `json:"id,omitempty"`
-	Name         string            `json:"name"`
-	Slug         string            `json:"slug"`
-	Components   []StatusComponent `json:"components,omitempty"`
-	CustomDomain string            `json:"custom_domain,omitempty"`
-	DomainStatus string            `json:"domain_status,omitempty"`
-	Theme        string            `json:"theme,omitempty"`
-	AccentColor  string            `json:"accent_color,omitempty"`
-	LogoURL      string            `json:"logo_url,omitempty"`
-	IsPublic     bool              `json:"is_public"`
-	CreatedAt    string            `json:"created_at,omitempty"`
-	UpdatedAt    string            `json:"updated_at,omitempty"`
+	ID                      string            `json:"id,omitempty"`
+	Name                    string            `json:"name"`
+	Slug                    string            `json:"slug"`
+	Components              []StatusComponent `json:"components,omitempty"`
+	ComponentGroups         []ComponentGroup  `json:"component_groups,omitempty"`
+	CustomDomain            string            `json:"custom_domain,omitempty"`
+	DomainStatus            string            `json:"domain_status,omitempty"`
+	Theme                   string            `json:"theme,omitempty"`
+	AccentColor             string            `json:"accent_color,omitempty"`
+	LogoURL                 string            `json:"logo_url,omitempty"`
+	WebhookURL              string            `json:"webhook_url,omitempty"`
+	EmailSubscribersEnabled bool              `json:"email_subscribers_enabled"`
+	IsPublic                bool              `json:"is_public"`
+	CreatedAt               string            `json:"created_at,omitempty"`
+	UpdatedAt               string            `json:"updated_at,omitempty"`
+}
+
+// ComponentGroup organizes components into named sections on the status page.
+type ComponentGroup struct {
+	ID    string `json:"id,omitempty"`
+	Name  string `json:"name"`
+	Order int    `json:"order"`
 }
 
 // StatusComponent maps a monitor to a display name on a status page.
@@ -132,6 +142,7 @@ type StatusComponent struct {
 	MonitorID   string `json:"monitor_id"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description,omitempty"`
+	GroupID     string `json:"group_id,omitempty"`
 	Order       int    `json:"order"`
 }
 
