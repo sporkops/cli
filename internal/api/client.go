@@ -110,6 +110,31 @@ type AlertChannel struct {
 	UpdatedAt          string            `json:"updated_at,omitempty"`
 }
 
+// StatusPage represents a public status page.
+type StatusPage struct {
+	ID           string            `json:"id,omitempty"`
+	Name         string            `json:"name"`
+	Slug         string            `json:"slug"`
+	Components   []StatusComponent `json:"components,omitempty"`
+	CustomDomain string            `json:"custom_domain,omitempty"`
+	DomainStatus string            `json:"domain_status,omitempty"`
+	Theme        string            `json:"theme,omitempty"`
+	AccentColor  string            `json:"accent_color,omitempty"`
+	LogoURL      string            `json:"logo_url,omitempty"`
+	IsPublic     bool              `json:"is_public"`
+	CreatedAt    string            `json:"created_at,omitempty"`
+	UpdatedAt    string            `json:"updated_at,omitempty"`
+}
+
+// StatusComponent maps a monitor to a display name on a status page.
+type StatusComponent struct {
+	ID          string `json:"id,omitempty"`
+	MonitorID   string `json:"monitor_id"`
+	DisplayName string `json:"display_name"`
+	Description string `json:"description,omitempty"`
+	Order       int    `json:"order"`
+}
+
 // dataEnvelope wraps the standard API response: {"data": ...}
 type dataEnvelope struct {
 	Data json.RawMessage `json:"data"`
@@ -175,6 +200,8 @@ func NewClient(token string) *Client {
 	}
 }
 
+// Monitor CRUD
+
 func (c *Client) CreateMonitor(m *Monitor) (*Monitor, error) {
 	var result Monitor
 	if err := c.doSingle("POST", "/monitors", m, &result); err != nil {
@@ -220,6 +247,8 @@ func (c *Client) GetMonitorResults(id string, limit int) ([]MonitorResult, error
 	return result, nil
 }
 
+// Account
+
 func (c *Client) GetAccount() (*Account, error) {
 	var result Account
 	if err := c.doSingle("GET", "/me", nil, &result); err != nil {
@@ -227,6 +256,8 @@ func (c *Client) GetAccount() (*Account, error) {
 	}
 	return &result, nil
 }
+
+// API Keys
 
 func (c *Client) CreateAPIKey(name string, expiresDays int) (*APIKey, error) {
 	req := struct {
@@ -254,6 +285,8 @@ func (c *Client) ListAPIKeys() ([]APIKey, error) {
 func (c *Client) DeleteAPIKey(id string) error {
 	return c.doRaw("DELETE", "/api-keys/"+url.PathEscape(id), nil)
 }
+
+// Alert Channels
 
 func (c *Client) ListAlertChannels() ([]AlertChannel, error) {
 	var result []AlertChannel
@@ -295,6 +328,55 @@ func (c *Client) TestAlertChannel(id string) error {
 	return c.doRaw("POST", "/alert-channels/"+url.PathEscape(id)+"/test", nil)
 }
 
+// Status Pages
+
+func (c *Client) CreateStatusPage(sp *StatusPage) (*StatusPage, error) {
+	var result StatusPage
+	if err := c.doSingle("POST", "/status-pages", sp, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *Client) ListStatusPages() ([]StatusPage, error) {
+	var result []StatusPage
+	if err := c.doList("GET", "/status-pages", nil, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (c *Client) GetStatusPage(id string) (*StatusPage, error) {
+	var result StatusPage
+	if err := c.doSingle("GET", "/status-pages/"+url.PathEscape(id), nil, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *Client) UpdateStatusPage(id string, sp *StatusPage) (*StatusPage, error) {
+	var result StatusPage
+	if err := c.doSingle("PUT", "/status-pages/"+url.PathEscape(id), sp, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *Client) DeleteStatusPage(id string) error {
+	return c.doRaw("DELETE", "/status-pages/"+url.PathEscape(id), nil)
+}
+
+func (c *Client) SetCustomDomain(statusPageID, domain string) error {
+	body := map[string]string{"domain": domain}
+	return c.doRaw("POST", "/status-pages/"+url.PathEscape(statusPageID)+"/custom-domain", body)
+}
+
+func (c *Client) RemoveCustomDomain(statusPageID string) error {
+	return c.doRaw("DELETE", "/status-pages/"+url.PathEscape(statusPageID)+"/custom-domain", nil)
+}
+
+// HTTP helpers
+
 func (c *Client) doSingle(method, path string, body, result any) error {
 	respBody, err := c.rawRequest(method, path, body)
 	if err != nil {
@@ -335,7 +417,6 @@ func (c *Client) doRaw(method, path string, body any) error {
 }
 
 // rawRequest performs the HTTP request with retry logic for transient errors.
-// Response bodies are capped at maxResponseBodySize to prevent unbounded memory use.
 func (c *Client) rawRequest(method, path string, body any) ([]byte, error) {
 	var jsonBytes []byte
 	if body != nil {
