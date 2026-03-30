@@ -3,7 +3,7 @@ package statuspage
 import (
 	"fmt"
 	"os"
-	"regexp"
+
 	"strings"
 
 	"github.com/sporkops/cli/internal/api"
@@ -85,14 +85,13 @@ Note: --component replaces all existing components.`,
 			hasChanges = true
 		}
 		if cmd.Flags().Changed("theme") {
-			if updateTheme != "light" && updateTheme != "dark" && updateTheme != "blue" && updateTheme != "midnight" {
+			if !validThemes[updateTheme] {
 				return fmt.Errorf("invalid --theme %q: must be light, dark, blue, or midnight", updateTheme)
 			}
 			current.Theme = updateTheme
 			hasChanges = true
 		}
 		if cmd.Flags().Changed("font-family") {
-			validFontFamilies := map[string]bool{"system": true, "sans-serif": true, "serif": true, "monospace": true}
 			if !validFontFamilies[updateFontFamily] {
 				return fmt.Errorf("invalid --font-family %q: must be system, sans-serif, serif, or monospace", updateFontFamily)
 			}
@@ -100,7 +99,6 @@ Note: --component replaces all existing components.`,
 			hasChanges = true
 		}
 		if cmd.Flags().Changed("header-style") {
-			validHeaderStyles := map[string]bool{"default": true, "banner": true, "minimal": true}
 			if !validHeaderStyles[updateHeaderStyle] {
 				return fmt.Errorf("invalid --header-style %q: must be default, banner, or minimal", updateHeaderStyle)
 			}
@@ -108,8 +106,7 @@ Note: --component replaces all existing components.`,
 			hasChanges = true
 		}
 		if cmd.Flags().Changed("accent-color") {
-			matched, _ := regexp.MatchString(`^#[0-9a-fA-F]{6}$`, updateAccentColor)
-			if !matched {
+			if updateAccentColor != "" && !accentColorRegex.MatchString(updateAccentColor) {
 				return fmt.Errorf("invalid --accent-color %q: must be a hex color like #ff0000", updateAccentColor)
 			}
 			current.AccentColor = updateAccentColor

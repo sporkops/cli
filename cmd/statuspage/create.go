@@ -29,6 +29,11 @@ var (
 )
 
 var slugRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$`)
+var accentColorRegex = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+
+var validThemes = map[string]bool{"light": true, "dark": true, "blue": true, "midnight": true}
+var validFontFamilies = map[string]bool{"system": true, "sans-serif": true, "serif": true, "monospace": true}
+var validHeaderStyles = map[string]bool{"default": true, "banner": true, "minimal": true}
 
 var createCmd = &cobra.Command{
 	Use:   "create",
@@ -58,24 +63,15 @@ Component group format: name=<name>[,order=<n>]`,
 			return fmt.Errorf("invalid --slug %q: must be 2-63 lowercase alphanumeric characters or hyphens, cannot start/end with hyphen", createSlug)
 		}
 
-		// Validate theme
-		if createTheme != "light" && createTheme != "dark" && createTheme != "blue" && createTheme != "midnight" {
+		if !validThemes[createTheme] {
 			return fmt.Errorf("invalid --theme %q: must be light, dark, blue, or midnight", createTheme)
 		}
-
-		// Validate accent color if provided
-		if createAccentColor != "" {
-			matched, _ := regexp.MatchString(`^#[0-9a-fA-F]{6}$`, createAccentColor)
-			if !matched {
-				return fmt.Errorf("invalid --accent-color %q: must be a hex color like #ff0000", createAccentColor)
-			}
+		if createAccentColor != "" && !accentColorRegex.MatchString(createAccentColor) {
+			return fmt.Errorf("invalid --accent-color %q: must be a hex color like #ff0000", createAccentColor)
 		}
-
-		validFontFamilies := map[string]bool{"system": true, "sans-serif": true, "serif": true, "monospace": true}
 		if !validFontFamilies[createFontFamily] {
 			return fmt.Errorf("invalid --font-family %q: must be system, sans-serif, serif, or monospace", createFontFamily)
 		}
-		validHeaderStyles := map[string]bool{"default": true, "banner": true, "minimal": true}
 		if !validHeaderStyles[createHeaderStyle] {
 			return fmt.Errorf("invalid --header-style %q: must be default, banner, or minimal", createHeaderStyle)
 		}
