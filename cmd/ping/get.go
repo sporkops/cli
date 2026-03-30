@@ -1,6 +1,7 @@
 package ping
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -36,7 +37,7 @@ Example:
 			return err
 		}
 
-		monitor, err := client.GetMonitor(id)
+		monitor, err := client.GetMonitor(context.Background(), id)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

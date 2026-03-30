@@ -1,11 +1,12 @@
 package ping
 
 import (
+	"context"
 	"fmt"
 	"os"
 
-	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +30,7 @@ var pauseCmd = &cobra.Command{
 		}
 
 		paused := true
-		result, err := client.UpdateMonitor(id, &api.Monitor{Paused: &paused})
+		result, err := client.UpdateMonitor(context.Background(), id, &spork.Monitor{Paused: &paused})
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
@@ -63,7 +64,7 @@ var unpauseCmd = &cobra.Command{
 		}
 
 		paused := false
-		result, err := client.UpdateMonitor(id, &api.Monitor{Paused: &paused})
+		result, err := client.UpdateMonitor(context.Background(), id, &spork.Monitor{Paused: &paused})
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

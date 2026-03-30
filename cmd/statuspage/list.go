@@ -1,6 +1,7 @@
 package statuspage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -13,13 +14,15 @@ import (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all status pages",
+	Example: `  spork status-page list
+  spork status-page list --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
-		pages, err := client.ListStatusPages()
+		pages, err := client.ListStatusPages(context.Background())
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

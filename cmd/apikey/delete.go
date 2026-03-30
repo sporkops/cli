@@ -2,6 +2,7 @@ package apikey
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -36,7 +37,7 @@ var deleteCmd = &cobra.Command{
 			}
 		}
 
-		if err := client.DeleteAPIKey(id); err != nil {
+		if err := client.DeleteAPIKey(context.Background(), id); err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
 			}

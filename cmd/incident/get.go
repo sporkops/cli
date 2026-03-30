@@ -1,12 +1,13 @@
 package incident
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +26,7 @@ Example:
 			return err
 		}
 
-		inc, err := client.GetIncident(args[0])
+		inc, err := client.GetIncident(context.Background(), args[0])
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

@@ -2,21 +2,29 @@ package alertchannel
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
-var forceRemove bool
+var (
+	forceRemove bool
+	yesRemove   bool
+)
 
 var rmCmd = &cobra.Command{
 	Use:   "rm <id>",
 	Short: "Remove an alert channel",
-	Long:  "Remove an alert channel by ID.\n\nExample:\n  spork alert-channel rm abc123\n  spork alert-channel rm abc123 --force",
-	Args:  cobra.ExactArgs(1),
+	Long:  "Remove an alert channel by ID.",
+	Example: `  spork alert-channel rm abc123
+  spork alert-channel rm abc123 --yes
+  spork alert-channel rm abc123 --force`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
 		if err != nil {
@@ -25,8 +33,13 @@ var rmCmd = &cobra.Command{
 
 		id := args[0]
 
-		if !forceRemove {
-			fmt.Printf("Remove alert channel %q? [y/N] ", id)
+		skipPrompt := forceRemove || yesRemove
+		if !skipPrompt {
+			isJSON := cmd.Root().Flag("json").Changed
+			if !term.IsTerminal(int(os.Stdout.Fd())) || isJSON {
+				return fmt.Errorf("refusing to delete without --yes in non-interactive mode")
+			}
+			fmt.Printf("Delete alert channel %q? [y/N] ", id)
 			reader := bufio.NewReader(os.Stdin)
 			answer, _ := reader.ReadString('\n')
 			answer = strings.TrimSpace(strings.ToLower(answer))
@@ -36,7 +49,7 @@ var rmCmd = &cobra.Command{
 			}
 		}
 
-		if err := client.DeleteAlertChannel(id); err != nil {
+		if err := client.DeleteAlertChannel(context.Background(), id); err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
 			}
@@ -51,4 +64,5 @@ var rmCmd = &cobra.Command{
 
 func init() {
 	rmCmd.Flags().BoolVarP(&forceRemove, "force", "f", false, "skip confirmation prompt")
+	rmCmd.Flags().BoolVarP(&yesRemove, "yes", "y", false, "skip confirmation prompt")
 }

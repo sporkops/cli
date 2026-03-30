@@ -4,14 +4,14 @@ import (
 	"os"
 
 	"github.com/sporkops/cli/cmd"
-	"github.com/sporkops/cli/internal/api"
+	"github.com/sporkops/cli/pkg/spork"
 )
 
 var version = "dev"
 
 func main() {
 	cmd.SetVersion(version)
-	api.Version = version
+	spork.Version = version
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}

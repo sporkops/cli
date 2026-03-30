@@ -1,6 +1,7 @@
 package alertchannel
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -13,13 +14,15 @@ import (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all alert channels",
+	Example: `  spork alert-channel list
+  spork alert-channel list --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
-		channels, err := client.ListAlertChannels()
+		channels, err := client.ListAlertChannels(context.Background())
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

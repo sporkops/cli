@@ -1,13 +1,14 @@
 package ping
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -87,7 +88,7 @@ var updateCmd = &cobra.Command{
 			}
 		}
 
-		update := &api.Monitor{}
+		update := &spork.Monitor{}
 		hasChanges := false
 
 		if cmd.Flags().Changed("name") {
@@ -175,7 +176,7 @@ var updateCmd = &cobra.Command{
 			return fmt.Errorf("no changes specified")
 		}
 
-		result, err := client.UpdateMonitor(id, update)
+		result, err := client.UpdateMonitor(context.Background(), id, update)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

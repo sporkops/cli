@@ -2,23 +2,27 @@ package statuspage
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
-var forceRemove bool
+var (
+	forceRemove bool
+	yesRemove   bool
+)
 
 var rmCmd = &cobra.Command{
 	Use:   "rm <id|name|slug>",
 	Short: "Remove a status page",
-	Long: `Remove a status page by ID, name, or slug.
-
-Example:
-  spork status-page rm sp_abc123
+	Long:  "Remove a status page by ID, name, or slug.",
+	Example: `  spork status-page rm sp_abc123
+  spork status-page rm acme-status --yes
   spork status-page rm acme-status --force`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -41,8 +45,13 @@ Example:
 			label = name
 		}
 
-		if !forceRemove {
-			fmt.Printf("Remove status page %q? [y/N] ", label)
+		skipPrompt := forceRemove || yesRemove
+		if !skipPrompt {
+			isJSON := cmd.Root().Flag("json").Changed
+			if !term.IsTerminal(int(os.Stdout.Fd())) || isJSON {
+				return fmt.Errorf("refusing to delete without --yes in non-interactive mode")
+			}
+			fmt.Printf("Delete status page %q? [y/N] ", label)
 			reader := bufio.NewReader(os.Stdin)
 			answer, _ := reader.ReadString('\n')
 			answer = strings.TrimSpace(strings.ToLower(answer))
@@ -52,7 +61,7 @@ Example:
 			}
 		}
 
-		if err := client.DeleteStatusPage(id); err != nil {
+		if err := client.DeleteStatusPage(context.Background(), id); err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
 			}
@@ -67,4 +76,5 @@ Example:
 
 func init() {
 	rmCmd.Flags().BoolVarP(&forceRemove, "force", "f", false, "skip confirmation prompt")
+	rmCmd.Flags().BoolVarP(&yesRemove, "yes", "y", false, "skip confirmation prompt")
 }

@@ -1,6 +1,7 @@
 package statuspage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -35,7 +36,7 @@ Example:
 			return err
 		}
 
-		sp, err := client.GetStatusPage(id)
+		sp, err := client.GetStatusPage(context.Background(), id)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

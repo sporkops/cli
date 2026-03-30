@@ -1,13 +1,14 @@
 package incident
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -55,7 +56,7 @@ Examples:
 			return fmt.Errorf("invalid --impact %q: must be none, minor, major, or critical", createImpact)
 		}
 
-		inc := &api.Incident{
+		inc := &spork.Incident{
 			Title:        title,
 			Message:      createMessage,
 			Type:         createType,
@@ -64,7 +65,7 @@ Examples:
 			ComponentIDs: createComponentIDs,
 		}
 
-		result, err := client.CreateIncident(createStatusPage, inc)
+		result, err := client.CreateIncident(context.Background(), createStatusPage, inc)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

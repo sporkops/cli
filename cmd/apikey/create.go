@@ -1,11 +1,13 @@
 package apikey
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +26,11 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		key, err := client.CreateAPIKey(createName, createExpires)
+		input := &spork.CreateAPIKeyInput{Name: createName}
+			if createExpires > 0 {
+				input.ExpiresInDays = &createExpires
+			}
+			key, err := client.CreateAPIKey(context.Background(), input)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

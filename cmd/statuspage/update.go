@@ -1,14 +1,14 @@
 package statuspage
 
 import (
+	"context"
 	"fmt"
 	"os"
-
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
-	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +63,7 @@ Note: --component replaces all existing components.`,
 		}
 
 		// Fetch current state to merge with updates (PUT requires full object)
-		current, err := client.GetStatusPage(id)
+		current, err := client.GetStatusPage(context.Background(), id)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
@@ -172,7 +172,7 @@ Note: --component replaces all existing components.`,
 		// Update the status page resource
 		if hasChanges {
 			// Clear server-managed fields before sending
-			sp := &api.StatusPage{
+			sp := &spork.StatusPage{
 				Name:                    current.Name,
 				Slug:                    current.Slug,
 				Theme:                   current.Theme,
@@ -187,7 +187,7 @@ Note: --component replaces all existing components.`,
 				ComponentGroups:         current.ComponentGroups,
 				EmailSubscribersEnabled: current.EmailSubscribersEnabled,
 			}
-			result, err := client.UpdateStatusPage(id, sp)
+			result, err := client.UpdateStatusPage(context.Background(), id, sp)
 			if err != nil {
 				if cmdutil.HandleAPIError(err) {
 					return err
@@ -201,7 +201,7 @@ Note: --component replaces all existing components.`,
 		// Handle custom domain changes
 		if hasDomainChange {
 			if updateRemoveDomain {
-				if err := client.RemoveCustomDomain(id); err != nil {
+				if err := client.RemoveCustomDomain(context.Background(), id); err != nil {
 					if cmdutil.HandleAPIError(err) {
 						return err
 					}
@@ -211,7 +211,7 @@ Note: --component replaces all existing components.`,
 				current.CustomDomain = ""
 				current.DomainStatus = ""
 			} else if updateDomain != "" {
-				if err := client.SetCustomDomain(id, updateDomain); err != nil {
+				if err := client.SetCustomDomain(context.Background(), id, updateDomain); err != nil {
 					if cmdutil.HandleAPIError(err) {
 						return err
 					}

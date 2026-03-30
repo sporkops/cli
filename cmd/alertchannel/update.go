@@ -1,6 +1,7 @@
 package alertchannel
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -33,7 +34,7 @@ Examples:
 		id := args[0]
 
 		// First fetch the existing channel so we can send a full PUT.
-		existing, err := client.GetAlertChannel(id)
+		existing, err := client.GetAlertChannel(context.Background(), id)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
@@ -66,7 +67,7 @@ Examples:
 			return fmt.Errorf("no changes specified")
 		}
 
-		result, err := client.UpdateAlertChannel(id, existing)
+		result, err := client.UpdateAlertChannel(context.Background(), id, existing)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

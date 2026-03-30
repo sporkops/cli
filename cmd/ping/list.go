@@ -1,13 +1,14 @@
 package ping
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
 
-	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -19,13 +20,16 @@ var (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all monitors",
+	Example: `  spork ping list
+  spork ping list --status up
+  spork ping list --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
-		monitors, err := client.ListMonitors()
+		monitors, err := client.ListMonitors(context.Background())
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
@@ -69,11 +73,11 @@ func init() {
 }
 
 // filterMonitors applies client-side status and type filters.
-func filterMonitors(monitors []api.Monitor, status, monitorType string) []api.Monitor {
+func filterMonitors(monitors []spork.Monitor, status, monitorType string) []spork.Monitor {
 	if status == "" && monitorType == "" {
 		return monitors
 	}
-	filtered := make([]api.Monitor, 0, len(monitors))
+	filtered := make([]spork.Monitor, 0, len(monitors))
 	for _, m := range monitors {
 		if status != "" && m.Status != status {
 			continue

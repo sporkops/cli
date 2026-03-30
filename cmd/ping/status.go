@@ -1,6 +1,7 @@
 package ping
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -18,13 +19,16 @@ var (
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show current status of all monitors",
+	Example: `  spork ping status
+  spork ping status --status down
+  spork ping status --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
-		monitors, err := client.ListMonitors()
+		monitors, err := client.ListMonitors(context.Background())
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

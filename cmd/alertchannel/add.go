@@ -1,13 +1,14 @@
 package alertchannel
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -59,13 +60,13 @@ Examples:
 			config[parts[0]] = parts[1]
 		}
 
-		ch := &api.AlertChannel{
+		ch := &spork.AlertChannel{
 			Name:   addName,
 			Type:   addType,
 			Config: config,
 		}
 
-		result, err := client.CreateAlertChannel(ch)
+		result, err := client.CreateAlertChannel(context.Background(), ch)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

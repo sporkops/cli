@@ -1,11 +1,12 @@
 package statuspage
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -25,20 +26,20 @@ func init() {
 	Cmd.AddCommand(rmCmd)
 }
 
-func resolveStatusPageID(client *api.Client, nameOrID string) (string, string, error) {
+func resolveStatusPageID(client *spork.Client, nameOrID string) (string, string, error) {
 	if !strings.Contains(nameOrID, " ") {
-		sp, err := client.GetStatusPage(nameOrID)
+		sp, err := client.GetStatusPage(context.Background(), nameOrID)
 		if err == nil {
 			return sp.ID, sp.Name, nil
 		}
-		var apiErr *api.APIError
+		var apiErr *spork.APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode == 404 {
 			// Fall through to name search
 		} else {
 			return "", "", err
 		}
 	}
-	pages, err := client.ListStatusPages()
+	pages, err := client.ListStatusPages(context.Background())
 	if err != nil {
 		return "", "", err
 	}
