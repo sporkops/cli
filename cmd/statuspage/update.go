@@ -8,6 +8,7 @@ import (
 
 	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -47,14 +48,14 @@ Component format: monitor_id=<id>,name=<display_name>[,description=<text>][,orde
 Note: --component replaces all existing components.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		id, name, err := resolveStatusPageID(client, args[0])
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -64,7 +65,7 @@ Note: --component replaces all existing components.`,
 		// Fetch current state to merge with updates (PUT requires full object)
 		current, err := client.GetStatusPage(id)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error fetching status page: %s\n", err)
@@ -188,7 +189,7 @@ Note: --component replaces all existing components.`,
 			}
 			result, err := client.UpdateStatusPage(id, sp)
 			if err != nil {
-				if handleAPIError(err) {
+				if cmdutil.HandleAPIError(err) {
 					return err
 				}
 				fmt.Fprintf(os.Stderr, "Error updating status page: %s\n", err)
@@ -201,7 +202,7 @@ Note: --component replaces all existing components.`,
 		if hasDomainChange {
 			if updateRemoveDomain {
 				if err := client.RemoveCustomDomain(id); err != nil {
-					if handleAPIError(err) {
+					if cmdutil.HandleAPIError(err) {
 						return err
 					}
 					fmt.Fprintf(os.Stderr, "Error removing custom domain: %s\n", err)
@@ -211,7 +212,7 @@ Note: --component replaces all existing components.`,
 				current.DomainStatus = ""
 			} else if updateDomain != "" {
 				if err := client.SetCustomDomain(id, updateDomain); err != nil {
-					if handleAPIError(err) {
+					if cmdutil.HandleAPIError(err) {
 						return err
 					}
 					fmt.Fprintf(os.Stderr, "Error setting custom domain: %s\n", err)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -54,7 +55,7 @@ Examples:
 Component format: monitor_id=<id>,name=<display_name>[,description=<text>][,group_id=<id>][,order=<n>]
 Component group format: name=<name>[,description=<text>][,order=<n>]`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
@@ -117,7 +118,7 @@ Component group format: name=<name>[,description=<text>][,order=<n>]`,
 
 		result, err := client.CreateStatusPage(sp)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error creating status page: %s\n", err)

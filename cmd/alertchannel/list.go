@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -13,14 +14,14 @@ var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all alert channels",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		channels, err := client.ListAlertChannels()
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error listing alert channels: %s\n", err)

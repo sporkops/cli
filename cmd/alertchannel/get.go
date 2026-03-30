@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -19,14 +20,14 @@ Example:
   spork alert-channel get ac_abc123 --json`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		ch, err := client.GetAlertChannel(args[0])
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error fetching alert channel: %s\n", err)
