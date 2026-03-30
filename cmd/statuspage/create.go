@@ -159,8 +159,10 @@ func init() {
 	createCmd.MarkFlagRequired("slug")
 }
 
+var componentValidKeys = map[string]bool{"monitor_id": true, "name": true, "description": true, "group_id": true, "order": true}
+
 // parseComponents parses --component flags into StatusComponent structs.
-// Format: monitor_id=<id>,name=<display_name>[,description=<text>][,order=<n>]
+// Format: monitor_id=<id>,name=<display_name>[,description=<text>][,group_id=<id>][,order=<n>]
 func parseComponents(args []string) ([]api.StatusComponent, error) {
 	if len(args) == 0 {
 		return nil, nil
@@ -168,13 +170,9 @@ func parseComponents(args []string) ([]api.StatusComponent, error) {
 
 	components := make([]api.StatusComponent, 0, len(args))
 	for i, arg := range args {
-		fields := make(map[string]string)
-		for _, pair := range strings.Split(arg, ",") {
-			parts := strings.SplitN(pair, "=", 2)
-			if len(parts) != 2 {
-				return nil, fmt.Errorf("invalid component format %q: expected key=value pairs separated by commas", arg)
-			}
-			fields[parts[0]] = parts[1]
+		fields, err := parseKeyValuePairs(arg, componentValidKeys)
+		if err != nil {
+			return nil, fmt.Errorf("component %d: %w", i+1, err)
 		}
 
 		monitorID, ok := fields["monitor_id"]
@@ -184,6 +182,9 @@ func parseComponents(args []string) ([]api.StatusComponent, error) {
 		name, ok := fields["name"]
 		if !ok || name == "" {
 			return nil, fmt.Errorf("component %d: name is required", i+1)
+		}
+		if len(name) > 100 {
+			return nil, fmt.Errorf("component %d: name too long (max 100 characters)", i+1)
 		}
 
 		comp := api.StatusComponent{
@@ -208,8 +209,75 @@ func parseComponents(args []string) ([]api.StatusComponent, error) {
 	return components, nil
 }
 
+// parseKeyValuePairs parses a string like "name=Foo,description=Hello, World,order=1"
+// into a map, handling commas inside values by scanning for known key boundaries.
+func parseKeyValuePairs(arg string, validKeys map[string]bool) (map[string]string, error) {
+	fields := make(map[string]string)
+
+	// Find positions of all "key=" occurrences at comma boundaries or start of string
+	type keyPos struct {
+		key   string
+		start int // index of the key in the arg
+		valAt int // index where the value begins (after "key=")
+	}
+	var positions []keyPos
+	for key := range validKeys {
+		prefix := key + "="
+		idx := 0
+		for idx <= len(arg)-len(prefix) {
+			pos := strings.Index(arg[idx:], prefix)
+			if pos == -1 {
+				break
+			}
+			absPos := idx + pos
+			// Valid if at start of string or preceded by comma
+			if absPos == 0 || arg[absPos-1] == ',' {
+				positions = append(positions, keyPos{key: key, start: absPos, valAt: absPos + len(prefix)})
+			}
+			idx = absPos + 1
+		}
+	}
+
+	if len(positions) == 0 {
+		return nil, fmt.Errorf("no valid key=value pairs found in %q", arg)
+	}
+
+	// Sort by position
+	for i := 0; i < len(positions); i++ {
+		for j := i + 1; j < len(positions); j++ {
+			if positions[j].start < positions[i].start {
+				positions[i], positions[j] = positions[j], positions[i]
+			}
+		}
+	}
+
+	// Extract values: each value runs from valAt to the start of the next key (minus the comma)
+	for idx, kp := range positions {
+		var val string
+		if idx+1 < len(positions) {
+			// Value ends at the comma before the next key
+			val = arg[kp.valAt : positions[idx+1].start-1]
+		} else {
+			val = arg[kp.valAt:]
+		}
+		if _, exists := fields[kp.key]; exists {
+			return nil, fmt.Errorf("duplicate key %q", kp.key)
+		}
+		fields[kp.key] = val
+	}
+
+	// Check for unexpected text before the first key
+	if positions[0].start > 0 {
+		return nil, fmt.Errorf("unexpected text before first key in %q", arg)
+	}
+
+	return fields, nil
+}
+
+var componentGroupValidKeys = map[string]bool{"name": true, "description": true, "order": true}
+
 // parseComponentGroups parses --component-group flags into ComponentGroup structs.
-// Format: name=<name>[,order=<n>]
+// Format: name=<name>[,description=<text>][,order=<n>]
 func parseComponentGroups(args []string) ([]api.ComponentGroup, error) {
 	if len(args) == 0 {
 		return nil, nil
@@ -217,23 +285,27 @@ func parseComponentGroups(args []string) ([]api.ComponentGroup, error) {
 
 	groups := make([]api.ComponentGroup, 0, len(args))
 	for i, arg := range args {
-		fields := make(map[string]string)
-		for _, pair := range strings.Split(arg, ",") {
-			parts := strings.SplitN(pair, "=", 2)
-			if len(parts) != 2 {
-				return nil, fmt.Errorf("invalid component-group format %q: expected key=value pairs separated by commas", arg)
-			}
-			fields[parts[0]] = parts[1]
+		fields, err := parseKeyValuePairs(arg, componentGroupValidKeys)
+		if err != nil {
+			return nil, fmt.Errorf("component-group %d: %w", i+1, err)
 		}
 
 		name, ok := fields["name"]
 		if !ok || name == "" {
 			return nil, fmt.Errorf("component-group %d: name is required", i+1)
 		}
+		if len(name) > 100 {
+			return nil, fmt.Errorf("component-group %d: name too long (max 100 characters)", i+1)
+		}
+
+		desc := fields["description"]
+		if len(desc) > 500 {
+			return nil, fmt.Errorf("component-group %d: description too long (max 500 characters)", i+1)
+		}
 
 		group := api.ComponentGroup{
 			Name:        name,
-			Description: fields["description"],
+			Description: desc,
 			Order:       i,
 		}
 
