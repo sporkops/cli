@@ -51,7 +51,7 @@ Examples:
     --component monitor_id=mon_abc,name=API,group_id=grp_1,order=1
 
 Component format: monitor_id=<id>,name=<display_name>[,description=<text>][,group_id=<id>][,order=<n>]
-Component group format: name=<name>[,order=<n>]`,
+Component group format: name=<name>[,description=<text>][,order=<n>]`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := requireAuth()
 		if err != nil {
@@ -151,7 +151,7 @@ func init() {
 	createCmd.Flags().StringVar(&createPassword, "password", "", "password for private status pages (used when --public=false)")
 	createCmd.Flags().StringVar(&createDomain, "domain", "", "custom domain (requires CNAME to status.sporkops.com)")
 	createCmd.Flags().StringArrayVar(&createComponents, "component", nil, "component as monitor_id=<id>,name=<name>[,description=<text>][,group_id=<id>][,order=<n>] (repeatable)")
-	createCmd.Flags().StringArrayVar(&createComponentGroups, "component-group", nil, "component group as name=<name>[,order=<n>] (repeatable)")
+	createCmd.Flags().StringArrayVar(&createComponentGroups, "component-group", nil, "component group as name=<name>[,description=<text>][,order=<n>] (repeatable)")
 	createCmd.Flags().StringVar(&createFontFamily, "font-family", "system", "Font family for the status page (system, sans-serif, serif, monospace)")
 	createCmd.Flags().StringVar(&createHeaderStyle, "header-style", "default", "Header style for the status page (default, banner, minimal)")
 	createCmd.Flags().BoolVar(&createEmailSubscribers, "email-subscribers", false, "enable email subscriber notifications")
@@ -232,8 +232,9 @@ func parseComponentGroups(args []string) ([]api.ComponentGroup, error) {
 		}
 
 		group := api.ComponentGroup{
-			Name:  name,
-			Order: i,
+			Name:        name,
+			Description: fields["description"],
+			Order:       i,
 		}
 
 		if orderStr, ok := fields["order"]; ok {
