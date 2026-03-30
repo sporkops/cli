@@ -26,6 +26,7 @@ var (
 	updateEmailSubscribers bool
 	updateFontFamily       string
 	updateHeaderStyle      string
+	updateWebhookURL       string
 )
 
 var updateCmd = &cobra.Command{
@@ -143,6 +144,13 @@ Note: --component replaces all existing components.`,
 			current.ComponentGroups = groups
 			hasChanges = true
 		}
+		if cmd.Flags().Changed("webhook-url") {
+			if updateWebhookURL != "" && !strings.HasPrefix(updateWebhookURL, "https://") {
+				return fmt.Errorf("invalid --webhook-url %q: must start with https://", updateWebhookURL)
+			}
+			current.WebhookURL = updateWebhookURL
+			hasChanges = true
+		}
 		if cmd.Flags().Changed("email-subscribers") {
 			current.EmailSubscribersEnabled = updateEmailSubscribers
 			hasChanges = true
@@ -156,7 +164,7 @@ Note: --component replaces all existing components.`,
 
 		if !hasChanges && !hasDomainChange {
 			fmt.Fprintln(os.Stderr, "Nothing to update. Specify at least one flag:")
-			fmt.Fprintln(os.Stderr, "  --name, --slug, --theme, --accent-color, --font-family, --header-style, --logo-url, --public, --password, --domain, --component, --component-group, --email-subscribers")
+			fmt.Fprintln(os.Stderr, "  --name, --slug, --theme, --accent-color, --font-family, --header-style, --logo-url, --webhook-url, --public, --password, --domain, --component, --component-group, --email-subscribers")
 			return fmt.Errorf("no changes specified")
 		}
 
@@ -245,4 +253,5 @@ func init() {
 	updateCmd.Flags().StringVar(&updateFontFamily, "font-family", "", "Font family for the status page (system, sans-serif, serif, monospace)")
 	updateCmd.Flags().StringVar(&updateHeaderStyle, "header-style", "", "Header style for the status page (default, banner, minimal)")
 	updateCmd.Flags().BoolVar(&updateEmailSubscribers, "email-subscribers", false, "enable/disable email subscriber notifications")
+	updateCmd.Flags().StringVar(&updateWebhookURL, "webhook-url", "", "webhook URL for incident notifications (must be https)")
 }

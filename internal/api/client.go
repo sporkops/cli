@@ -149,6 +149,33 @@ type StatusComponent struct {
 	Order       int    `json:"order"`
 }
 
+// Incident represents a status page incident.
+type Incident struct {
+	ID             string   `json:"id,omitempty"`
+	StatusPageID   string   `json:"status_page_id,omitempty"`
+	Title          string   `json:"title"`
+	Message        string   `json:"message,omitempty"`
+	Type           string   `json:"type,omitempty"`
+	Status         string   `json:"status,omitempty"`
+	Impact         string   `json:"impact,omitempty"`
+	ComponentIDs   []string `json:"component_ids,omitempty"`
+	StartedAt      string   `json:"started_at,omitempty"`
+	ResolvedAt     string   `json:"resolved_at,omitempty"`
+	ScheduledStart string   `json:"scheduled_start,omitempty"`
+	ScheduledEnd   string   `json:"scheduled_end,omitempty"`
+	CreatedAt      string   `json:"created_at,omitempty"`
+	UpdatedAt      string   `json:"updated_at,omitempty"`
+}
+
+// IncidentUpdate represents a timeline update on an incident.
+type IncidentUpdate struct {
+	ID         string `json:"id,omitempty"`
+	IncidentID string `json:"incident_id,omitempty"`
+	Status     string `json:"status,omitempty"`
+	Message    string `json:"message,omitempty"`
+	CreatedAt  string `json:"created_at,omitempty"`
+}
+
 // dataEnvelope wraps the standard API response: {"data": ...}
 type dataEnvelope struct {
 	Data json.RawMessage `json:"data"`
@@ -413,6 +440,71 @@ func (c *Client) SetCustomDomain(statusPageID, domain string) error {
 // RemoveCustomDomain removes the custom domain from a status page.
 func (c *Client) RemoveCustomDomain(statusPageID string) error {
 	return c.doRaw("DELETE", "/status-pages/"+url.PathEscape(statusPageID)+"/custom-domain", nil)
+}
+
+// Incidents
+
+// CreateIncident creates a new incident on a status page.
+func (c *Client) CreateIncident(statusPageID string, inc *Incident) (*Incident, error) {
+	var result Incident
+	path := "/status-pages/" + url.PathEscape(statusPageID) + "/incidents"
+	if err := c.doSingle("POST", path, inc, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// ListIncidents returns all incidents for a status page.
+func (c *Client) ListIncidents(statusPageID string) ([]Incident, error) {
+	var result []Incident
+	path := "/status-pages/" + url.PathEscape(statusPageID) + "/incidents?per_page=100"
+	if err := c.doList("GET", path, nil, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetIncident returns a single incident by ID.
+func (c *Client) GetIncident(id string) (*Incident, error) {
+	var result Incident
+	if err := c.doSingle("GET", "/incidents/"+url.PathEscape(id), nil, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// UpdateIncident partially updates an incident by ID.
+func (c *Client) UpdateIncident(id string, inc *Incident) (*Incident, error) {
+	var result Incident
+	if err := c.doSingle("PATCH", "/incidents/"+url.PathEscape(id), inc, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// DeleteIncident deletes an incident by ID.
+func (c *Client) DeleteIncident(id string) error {
+	return c.doRaw("DELETE", "/incidents/"+url.PathEscape(id), nil)
+}
+
+// CreateIncidentUpdate adds a timeline update to an incident.
+func (c *Client) CreateIncidentUpdate(incidentID string, upd *IncidentUpdate) (*IncidentUpdate, error) {
+	var result IncidentUpdate
+	path := "/incidents/" + url.PathEscape(incidentID) + "/updates"
+	if err := c.doSingle("POST", path, upd, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// ListIncidentUpdates returns all timeline updates for an incident.
+func (c *Client) ListIncidentUpdates(incidentID string) ([]IncidentUpdate, error) {
+	var result []IncidentUpdate
+	path := "/incidents/" + url.PathEscape(incidentID) + "/updates"
+	if err := c.doList("GET", path, nil, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // HTTP helpers
