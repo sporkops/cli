@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -11,14 +12,14 @@ var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List API keys",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		keys, err := client.ListAPIKeys()
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Printf("Error listing API keys: %s\n", err)

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -20,14 +21,14 @@ Example:
   spork status-page get "Acme Status" --json`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		id, _, err := resolveStatusPageID(client, args[0])
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -36,7 +37,7 @@ Example:
 
 		sp, err := client.GetStatusPage(id)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error fetching status page: %s\n", err)

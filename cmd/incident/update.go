@@ -7,6 +7,7 @@ import (
 
 	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +30,7 @@ Example:
   spork incident update inc_abc123 --impact critical --title "Major outage"`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
@@ -79,7 +80,7 @@ Example:
 
 		result, err := client.UpdateIncident(args[0], inc)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error updating incident: %s\n", err)

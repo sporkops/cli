@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/sporkops/cli/internal/api"
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +40,7 @@ Example:
   spork ping add https://example.com --type ssl --ssl-warn-days 30`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
@@ -114,7 +115,7 @@ Example:
 
 		result, err := client.CreateMonitor(monitor)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error creating monitor: %s\n", err)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,7 @@ Example:
   spork incident rm inc_abc123 --force`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
@@ -37,7 +38,7 @@ Example:
 		}
 
 		if err := client.DeleteIncident(args[0]); err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error deleting incident: %s\n", err)

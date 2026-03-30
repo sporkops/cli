@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -18,14 +19,14 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show current status of all monitors",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		monitors, err := client.ListMonitors()
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error fetching status: %s\n", err)

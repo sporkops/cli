@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -18,14 +19,14 @@ var listCmd = &cobra.Command{
 Example:
   spork incident list --status-page sp_abc`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		incidents, err := client.ListIncidents(listStatusPage)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error listing incidents: %s\n", err)
