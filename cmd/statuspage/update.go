@@ -24,6 +24,8 @@ var (
 	updateComponents       []string
 	updateComponentGroups  []string
 	updateEmailSubscribers bool
+	updateFontFamily       string
+	updateHeaderStyle      string
 )
 
 var updateCmd = &cobra.Command{
@@ -83,10 +85,26 @@ Note: --component replaces all existing components.`,
 			hasChanges = true
 		}
 		if cmd.Flags().Changed("theme") {
-			if updateTheme != "light" && updateTheme != "dark" {
-				return fmt.Errorf("invalid --theme %q: must be light or dark", updateTheme)
+			if updateTheme != "light" && updateTheme != "dark" && updateTheme != "blue" && updateTheme != "midnight" {
+				return fmt.Errorf("invalid --theme %q: must be light, dark, blue, or midnight", updateTheme)
 			}
 			current.Theme = updateTheme
+			hasChanges = true
+		}
+		if cmd.Flags().Changed("font-family") {
+			validFontFamilies := map[string]bool{"system": true, "sans-serif": true, "serif": true, "monospace": true}
+			if !validFontFamilies[updateFontFamily] {
+				return fmt.Errorf("invalid --font-family %q: must be system, sans-serif, serif, or monospace", updateFontFamily)
+			}
+			current.FontFamily = updateFontFamily
+			hasChanges = true
+		}
+		if cmd.Flags().Changed("header-style") {
+			validHeaderStyles := map[string]bool{"default": true, "banner": true, "minimal": true}
+			if !validHeaderStyles[updateHeaderStyle] {
+				return fmt.Errorf("invalid --header-style %q: must be default, banner, or minimal", updateHeaderStyle)
+			}
+			current.HeaderStyle = updateHeaderStyle
 			hasChanges = true
 		}
 		if cmd.Flags().Changed("accent-color") {
@@ -141,7 +159,7 @@ Note: --component replaces all existing components.`,
 
 		if !hasChanges && !hasDomainChange {
 			fmt.Fprintln(os.Stderr, "Nothing to update. Specify at least one flag:")
-			fmt.Fprintln(os.Stderr, "  --name, --slug, --theme, --accent-color, --logo-url, --public, --password, --domain, --component, --component-group, --email-subscribers")
+			fmt.Fprintln(os.Stderr, "  --name, --slug, --theme, --accent-color, --font-family, --header-style, --logo-url, --public, --password, --domain, --component, --component-group, --email-subscribers")
 			return fmt.Errorf("no changes specified")
 		}
 
@@ -153,6 +171,8 @@ Note: --component replaces all existing components.`,
 				Slug:                    current.Slug,
 				Theme:                   current.Theme,
 				AccentColor:             current.AccentColor,
+				FontFamily:              current.FontFamily,
+				HeaderStyle:             current.HeaderStyle,
 				LogoURL:                 current.LogoURL,
 				WebhookURL:              current.WebhookURL,
 				IsPublic:                current.IsPublic,
@@ -225,5 +245,7 @@ func init() {
 	updateCmd.Flags().BoolVar(&updateRemoveDomain, "remove-domain", false, "remove the custom domain")
 	updateCmd.Flags().StringArrayVar(&updateComponents, "component", nil, "component as monitor_id=<id>,name=<name>[,description=<text>][,group_id=<id>][,order=<n>] (replaces all)")
 	updateCmd.Flags().StringArrayVar(&updateComponentGroups, "component-group", nil, "component group as name=<name>[,order=<n>] (replaces all)")
+	updateCmd.Flags().StringVar(&updateFontFamily, "font-family", "", "Font family for the status page (system, sans-serif, serif, monospace)")
+	updateCmd.Flags().StringVar(&updateHeaderStyle, "header-style", "", "Header style for the status page (default, banner, minimal)")
 	updateCmd.Flags().BoolVar(&updateEmailSubscribers, "email-subscribers", false, "enable/disable email subscriber notifications")
 }

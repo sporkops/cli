@@ -57,6 +57,12 @@ Example:
 		if sp.AccentColor != "" {
 			fmt.Printf("%-20s %s\n", "Accent Color:", sp.AccentColor)
 		}
+		if sp.FontFamily != "" {
+			fmt.Printf("%-20s %s\n", "Font Family:", sp.FontFamily)
+		}
+		if sp.HeaderStyle != "" {
+			fmt.Printf("%-20s %s\n", "Header Style:", sp.HeaderStyle)
+		}
 		if sp.LogoURL != "" {
 			fmt.Printf("%-20s %s\n", "Logo URL:", sp.LogoURL)
 		}
