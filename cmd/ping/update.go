@@ -6,8 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/api"
+	"github.com/sporkops/cli/internal/cmdutil"
 )
 
 var (
@@ -35,14 +36,14 @@ var updateCmd = &cobra.Command{
 	Long:  "Update an existing monitor's settings.\n\nExample:\n  spork ping update https://example.com --name \"New Name\"\n  spork ping update abc123 --interval 300\n\nTip: Use 'spork ping pause' and 'spork ping unpause' to pause/resume monitors.",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		id, name, err := resolveMonitorID(client, args[0])
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -176,7 +177,7 @@ var updateCmd = &cobra.Command{
 
 		result, err := client.UpdateMonitor(id, update)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error updating monitor: %s\n", err)

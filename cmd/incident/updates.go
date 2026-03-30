@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
 )
 
 var updatesCmd = &cobra.Command{
@@ -17,14 +18,14 @@ Example:
   spork incident updates inc_abc123`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		updates, err := client.ListIncidentUpdates(args[0])
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error listing incident updates: %s\n", err)

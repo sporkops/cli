@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
 )
 
 var historyLimit int
@@ -19,14 +20,14 @@ var historyCmd = &cobra.Command{
 	Long:  "Show recent uptime check results for a monitor.\n\nExample:\n  spork ping history https://example.com\n  spork ping history abc123 --limit 50",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		id, _, err := resolveMonitorID(client, args[0])
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -35,7 +36,7 @@ var historyCmd = &cobra.Command{
 
 		monitor, err := client.GetMonitor(id)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error fetching monitor: %s\n", err)
@@ -44,7 +45,7 @@ var historyCmd = &cobra.Command{
 
 		results, err := client.GetMonitorResults(id, historyLimit)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error fetching results: %s\n", err)

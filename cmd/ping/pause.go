@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sporkops/cli/internal/api"
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/api"
+	"github.com/sporkops/cli/internal/cmdutil"
 )
 
 var pauseCmd = &cobra.Command{
@@ -13,14 +14,14 @@ var pauseCmd = &cobra.Command{
 	Short: "Pause a monitor",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		id, _, err := resolveMonitorID(client, args[0])
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -30,7 +31,7 @@ var pauseCmd = &cobra.Command{
 		paused := true
 		result, err := client.UpdateMonitor(id, &api.Monitor{Paused: &paused})
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error pausing monitor: %s\n", err)
@@ -47,14 +48,14 @@ var unpauseCmd = &cobra.Command{
 	Short: "Resume a paused monitor",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		id, _, err := resolveMonitorID(client, args[0])
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -64,7 +65,7 @@ var unpauseCmd = &cobra.Command{
 		paused := false
 		result, err := client.UpdateMonitor(id, &api.Monitor{Paused: &paused})
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error unpausing monitor: %s\n", err)

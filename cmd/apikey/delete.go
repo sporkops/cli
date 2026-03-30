@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/cmdutil"
 )
 
 var forceDelete bool
@@ -17,7 +18,7 @@ var deleteCmd = &cobra.Command{
 	Long:  "Delete an API key by ID.\n\nExample:\n  spork api-key delete abc123\n  spork api-key delete abc123 --force",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
@@ -36,7 +37,7 @@ var deleteCmd = &cobra.Command{
 		}
 
 		if err := client.DeleteAPIKey(id); err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error deleting API key: %s\n", err)

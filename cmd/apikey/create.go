@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
 )
 
 var (
@@ -18,14 +19,14 @@ var createCmd = &cobra.Command{
 	Short: "Create a new API key",
 	Long:  "Create a new API key for programmatic access.\n\nExample:\n  spork api-key create --name \"CI deploy\"\n  spork api-key create --name \"CI deploy\" --expires 90",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		key, err := client.CreateAPIKey(createName, createExpires)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error creating API key: %s\n", err)

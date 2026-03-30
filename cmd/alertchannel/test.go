@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/cmdutil"
 )
 
 var testCmd = &cobra.Command{
@@ -12,7 +13,7 @@ var testCmd = &cobra.Command{
 	Short: "Send a test notification",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
@@ -20,7 +21,7 @@ var testCmd = &cobra.Command{
 		id := args[0]
 
 		if err := client.TestAlertChannel(id); err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error sending test notification: %s\n", err)

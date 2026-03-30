@@ -5,9 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
-	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/api"
+	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
 )
 
 var (
@@ -29,7 +30,7 @@ Examples:
   spork alert-channel add --type webhook --name "Custom Hook" --config url=https://example.com/webhook
   spork alert-channel add --type pagerduty --name "PD Oncall" --config integration_key=abc123`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
@@ -66,7 +67,7 @@ Examples:
 
 		result, err := client.CreateAlertChannel(ch)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error creating alert channel: %s\n", err)

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/auth"
 	"github.com/sporkops/cli/internal/output"
-	"github.com/spf13/cobra"
 )
 
 var whoamiCmd = &cobra.Command{

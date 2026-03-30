@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/sporkops/cli/cmd/alertchannel"
 	"github.com/sporkops/cli/cmd/apikey"
 	"github.com/sporkops/cli/cmd/incident"
 	"github.com/sporkops/cli/cmd/ping"
 	"github.com/sporkops/cli/cmd/statuspage"
-	"github.com/spf13/cobra"
 )
 
 var (

@@ -5,9 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
-	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/api"
+	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
 )
 
 var (
@@ -32,7 +33,7 @@ Examples:
   spork incident create --status-page sp_abc --title "Database outage" \
     --message "Investigating elevated error rates" --impact critical`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
@@ -65,7 +66,7 @@ Examples:
 
 		result, err := client.CreateIncident(createStatusPage, inc)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error creating incident: %s\n", err)

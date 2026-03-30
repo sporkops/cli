@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/cmdutil"
 )
 
 var forceRemove bool
@@ -17,14 +18,14 @@ var rmCmd = &cobra.Command{
 	Long:  "Remove an uptime monitor by ID or URL.\n\nExample:\n  spork ping rm https://example.com\n  spork ping rm abc123 --force",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
 
 		id, name, err := resolveMonitorID(client, args[0])
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -47,7 +48,7 @@ var rmCmd = &cobra.Command{
 		}
 
 		if err := client.DeleteMonitor(id); err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error removing monitor: %s\n", err)

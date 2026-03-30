@@ -5,8 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
 )
 
 var (
@@ -24,7 +25,7 @@ Examples:
   spork alert-channel update ch_abc123 --config to=newemail@example.com`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := requireAuth()
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
 			return err
 		}
@@ -34,7 +35,7 @@ Examples:
 		// First fetch the existing channel so we can send a full PUT.
 		existing, err := client.GetAlertChannel(id)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error fetching alert channel: %s\n", err)
@@ -67,7 +68,7 @@ Examples:
 
 		result, err := client.UpdateAlertChannel(id, existing)
 		if err != nil {
-			if handleAPIError(err) {
+			if cmdutil.HandleAPIError(err) {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Error updating alert channel: %s\n", err)

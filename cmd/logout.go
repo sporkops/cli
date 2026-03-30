@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/sporkops/cli/internal/auth"
 	"github.com/spf13/cobra"
+	"github.com/sporkops/cli/internal/auth"
 )
 
 var logoutCmd = &cobra.Command{
