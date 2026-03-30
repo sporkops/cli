@@ -236,7 +236,7 @@ Note: --component replaces all existing components.`,
 func init() {
 	updateCmd.Flags().StringVar(&updateName, "name", "", "new status page name")
 	updateCmd.Flags().StringVar(&updateSlug, "slug", "", "new URL slug")
-	updateCmd.Flags().StringVar(&updateTheme, "theme", "", "color theme: light, dark")
+	updateCmd.Flags().StringVar(&updateTheme, "theme", "", "color theme: light, dark, blue, midnight")
 	updateCmd.Flags().StringVar(&updateAccentColor, "accent-color", "", "accent color as hex (e.g. #0066ff)")
 	updateCmd.Flags().StringVar(&updateLogoURL, "logo-url", "", "logo URL (must be https)")
 	updateCmd.Flags().BoolVar(&updatePublic, "public", true, "whether the status page is publicly accessible")

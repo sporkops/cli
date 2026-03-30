@@ -148,7 +148,7 @@ Component group format: name=<name>[,order=<n>]`,
 func init() {
 	createCmd.Flags().StringVar(&createName, "name", "", "status page name (required)")
 	createCmd.Flags().StringVar(&createSlug, "slug", "", "URL slug (required, 2-63 lowercase alphanumeric/hyphens)")
-	createCmd.Flags().StringVar(&createTheme, "theme", "light", "color theme: light, dark")
+	createCmd.Flags().StringVar(&createTheme, "theme", "light", "color theme: light, dark, blue, midnight")
 	createCmd.Flags().StringVar(&createAccentColor, "accent-color", "", "accent color as hex (e.g. #0066ff)")
 	createCmd.Flags().StringVar(&createLogoURL, "logo-url", "", "logo URL (must be https)")
 	createCmd.Flags().BoolVar(&createPublic, "public", true, "whether the status page is publicly accessible")
