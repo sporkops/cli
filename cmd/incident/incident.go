@@ -1,4 +1,4 @@
-package alertchannel
+package incident
 
 import (
 	"errors"
@@ -10,25 +10,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Cmd is the `spork alert-channel` parent command.
+// Cmd is the `spork incident` parent command.
 var Cmd = &cobra.Command{
-	Use:     "alert-channel",
-	Aliases: []string{"ac"},
-	Short:   "Manage alert channels",
-	Long:    "Create, list, and manage alert channels for downtime notifications.",
+	Use:     "incident",
+	Aliases: []string{"inc"},
+	Short:   "Manage status page incidents",
+	Long:    "Create, list, and manage incidents on your status pages.",
 }
 
 func init() {
-	Cmd.AddCommand(addCmd)
-	Cmd.AddCommand(getCmd)
+	Cmd.AddCommand(createCmd)
 	Cmd.AddCommand(listCmd)
+	Cmd.AddCommand(getCmd)
 	Cmd.AddCommand(updateCmd)
 	Cmd.AddCommand(rmCmd)
-	Cmd.AddCommand(testCmd)
+	Cmd.AddCommand(updateAddCmd)
+	Cmd.AddCommand(updatesCmd)
 }
 
 // requireAuth loads the stored token and returns an API client.
-// If no token is found, it prints login instructions and returns an error.
 func requireAuth() (*api.Client, error) {
 	token, err := auth.LoadToken()
 	if err != nil {
@@ -50,7 +50,6 @@ func requireAuth() (*api.Client, error) {
 }
 
 // handleAPIError prints user-friendly messages for common API errors.
-// Returns true if the error was handled (printed), false otherwise.
 func handleAPIError(err error) bool {
 	var apiErr *api.APIError
 	if !errors.As(err, &apiErr) {
@@ -83,4 +82,23 @@ func handleAPIError(err error) bool {
 	}
 
 	return true
+}
+
+var validStatuses = map[string]bool{
+	"investigating": true,
+	"identified":    true,
+	"monitoring":    true,
+	"resolved":      true,
+}
+
+var validTypes = map[string]bool{
+	"incident":    true,
+	"maintenance": true,
+}
+
+var validImpacts = map[string]bool{
+	"none":     true,
+	"minor":    true,
+	"major":    true,
+	"critical": true,
 }

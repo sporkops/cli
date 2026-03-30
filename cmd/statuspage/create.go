@@ -26,6 +26,7 @@ var (
 	createEmailSubscribers bool
 	createFontFamily       string
 	createHeaderStyle      string
+	createWebhookURL       string
 )
 
 var slugRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$`)
@@ -81,6 +82,11 @@ Component group format: name=<name>[,order=<n>]`,
 			return fmt.Errorf("invalid --logo-url %q: must start with https://", createLogoURL)
 		}
 
+		// Validate webhook URL if provided
+		if createWebhookURL != "" && !strings.HasPrefix(createWebhookURL, "https://") {
+			return fmt.Errorf("invalid --webhook-url %q: must start with https://", createWebhookURL)
+		}
+
 		// Parse components
 		components, err := parseComponents(createComponents)
 		if err != nil {
@@ -105,6 +111,7 @@ Component group format: name=<name>[,order=<n>]`,
 			Password:                createPassword,
 			Components:              components,
 			ComponentGroups:         groups,
+			WebhookURL:              createWebhookURL,
 			EmailSubscribersEnabled: createEmailSubscribers,
 		}
 
@@ -155,6 +162,7 @@ func init() {
 	createCmd.Flags().StringVar(&createFontFamily, "font-family", "system", "Font family for the status page (system, sans-serif, serif, monospace)")
 	createCmd.Flags().StringVar(&createHeaderStyle, "header-style", "default", "Header style for the status page (default, banner, minimal)")
 	createCmd.Flags().BoolVar(&createEmailSubscribers, "email-subscribers", false, "enable email subscriber notifications")
+	createCmd.Flags().StringVar(&createWebhookURL, "webhook-url", "", "webhook URL for incident notifications (must be https)")
 	createCmd.MarkFlagRequired("name")
 	createCmd.MarkFlagRequired("slug")
 }

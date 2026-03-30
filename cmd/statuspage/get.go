@@ -66,6 +66,9 @@ Example:
 		if sp.LogoURL != "" {
 			fmt.Printf("%-20s %s\n", "Logo URL:", sp.LogoURL)
 		}
+		if sp.WebhookURL != "" {
+			fmt.Printf("%-20s %s\n", "Webhook URL:", sp.WebhookURL)
+		}
 		if sp.CustomDomain != "" {
 			fmt.Printf("%-20s %s (%s)\n", "Custom Domain:", sp.CustomDomain, sp.DomainStatus)
 		}
