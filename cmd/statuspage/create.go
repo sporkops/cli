@@ -1,15 +1,16 @@
 package statuspage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -100,7 +101,7 @@ Component group format: name=<name>[,description=<text>][,order=<n>]`,
 			return err
 		}
 
-		sp := &api.StatusPage{
+		sp := &spork.StatusPage{
 			Name:                    createName,
 			Slug:                    createSlug,
 			Theme:                   createTheme,
@@ -116,7 +117,7 @@ Component group format: name=<name>[,description=<text>][,order=<n>]`,
 			EmailSubscribersEnabled: createEmailSubscribers,
 		}
 
-		result, err := client.CreateStatusPage(sp)
+		result, err := client.CreateStatusPage(context.Background(), sp)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
@@ -127,7 +128,7 @@ Component group format: name=<name>[,description=<text>][,order=<n>]`,
 
 		// Set custom domain if specified
 		if createDomain != "" {
-			if err := client.SetCustomDomain(result.ID, createDomain); err != nil {
+			if err := client.SetCustomDomain(context.Background(), result.ID, createDomain); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: status page created but custom domain failed: %s\n", err)
 			} else {
 				result.CustomDomain = createDomain
@@ -172,12 +173,12 @@ var componentValidKeys = map[string]bool{"monitor_id": true, "name": true, "desc
 
 // parseComponents parses --component flags into StatusComponent structs.
 // Format: monitor_id=<id>,name=<display_name>[,description=<text>][,group_id=<id>][,order=<n>]
-func parseComponents(args []string) ([]api.StatusComponent, error) {
+func parseComponents(args []string) ([]spork.StatusComponent, error) {
 	if len(args) == 0 {
 		return nil, nil
 	}
 
-	components := make([]api.StatusComponent, 0, len(args))
+	components := make([]spork.StatusComponent, 0, len(args))
 	for i, arg := range args {
 		fields, err := parseKeyValuePairs(arg, componentValidKeys)
 		if err != nil {
@@ -196,7 +197,7 @@ func parseComponents(args []string) ([]api.StatusComponent, error) {
 			return nil, fmt.Errorf("component %d: name too long (max 100 characters)", i+1)
 		}
 
-		comp := api.StatusComponent{
+		comp := spork.StatusComponent{
 			MonitorID:   monitorID,
 			DisplayName: name,
 			Description: fields["description"],
@@ -287,12 +288,12 @@ var componentGroupValidKeys = map[string]bool{"name": true, "description": true,
 
 // parseComponentGroups parses --component-group flags into ComponentGroup structs.
 // Format: name=<name>[,description=<text>][,order=<n>]
-func parseComponentGroups(args []string) ([]api.ComponentGroup, error) {
+func parseComponentGroups(args []string) ([]spork.ComponentGroup, error) {
 	if len(args) == 0 {
 		return nil, nil
 	}
 
-	groups := make([]api.ComponentGroup, 0, len(args))
+	groups := make([]spork.ComponentGroup, 0, len(args))
 	for i, arg := range args {
 		fields, err := parseKeyValuePairs(arg, componentGroupValidKeys)
 		if err != nil {
@@ -312,7 +313,7 @@ func parseComponentGroups(args []string) ([]api.ComponentGroup, error) {
 			return nil, fmt.Errorf("component-group %d: description too long (max 500 characters)", i+1)
 		}
 
-		group := api.ComponentGroup{
+		group := spork.ComponentGroup{
 			Name:        name,
 			Description: desc,
 			Order:       i,

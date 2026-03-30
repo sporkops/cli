@@ -1,6 +1,7 @@
 package alertchannel
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -19,7 +20,7 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
-		channels, err := client.ListAlertChannels()
+		channels, err := client.ListAlertChannels(context.Background())
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

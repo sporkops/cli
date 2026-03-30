@@ -1,6 +1,7 @@
 package incident
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -23,7 +24,7 @@ Example:
 			return err
 		}
 
-		updates, err := client.ListIncidentUpdates(args[0])
+		updates, err := client.ListIncidentUpdates(context.Background(), args[0])
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

@@ -1,6 +1,7 @@
 package ping
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -34,7 +35,7 @@ var historyCmd = &cobra.Command{
 			return err
 		}
 
-		monitor, err := client.GetMonitor(id)
+		monitor, err := client.GetMonitor(context.Background(), id)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
@@ -43,7 +44,7 @@ var historyCmd = &cobra.Command{
 			return err
 		}
 
-		results, err := client.GetMonitorResults(id, historyLimit)
+		results, err := client.GetMonitorResults(context.Background(), id, historyLimit)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

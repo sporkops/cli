@@ -1,6 +1,7 @@
 package apikey
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/sporkops/cli/internal/output"
@@ -17,7 +18,7 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
-		keys, err := client.ListAPIKeys()
+		keys, err := client.ListAPIKeys(context.Background())
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

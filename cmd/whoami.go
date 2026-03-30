@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"os"
 
-	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/auth"
 	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -25,11 +25,10 @@ var whoamiCmd = &cobra.Command{
 			return fmt.Errorf("not logged in")
 		}
 
-		client := api.NewClient(token)
-		account, err := client.GetAccount()
+		client := spork.NewClient(spork.WithAPIKey(token))
+		account, err := client.GetAccount(context.Background())
 		if err != nil {
-			var apiErr *api.APIError
-			if errors.As(err, &apiErr) && apiErr.StatusCode == 401 {
+			if spork.IsUnauthorized(err) {
 				fmt.Fprintln(os.Stderr, "Session expired. Run: spork login")
 			}
 			return err

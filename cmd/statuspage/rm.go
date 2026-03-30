@@ -2,6 +2,7 @@ package statuspage
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -52,7 +53,7 @@ Example:
 			}
 		}
 
-		if err := client.DeleteStatusPage(id); err != nil {
+		if err := client.DeleteStatusPage(context.Background(), id); err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
 			}

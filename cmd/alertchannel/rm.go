@@ -2,6 +2,7 @@ package alertchannel
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -36,7 +37,7 @@ var rmCmd = &cobra.Command{
 			}
 		}
 
-		if err := client.DeleteAlertChannel(id); err != nil {
+		if err := client.DeleteAlertChannel(context.Background(), id); err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
 			}

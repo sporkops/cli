@@ -1,6 +1,7 @@
 package alertchannel
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -20,7 +21,7 @@ var testCmd = &cobra.Command{
 
 		id := args[0]
 
-		if err := client.TestAlertChannel(id); err != nil {
+		if err := client.TestAlertChannel(context.Background(), id); err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
 			}

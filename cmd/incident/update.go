@@ -1,13 +1,14 @@
 package incident
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
-	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +36,7 @@ Example:
 			return err
 		}
 
-		inc := &api.Incident{}
+		inc := &spork.Incident{}
 		hasChanges := false
 
 		if cmd.Flags().Changed("title") {
@@ -78,7 +79,7 @@ Example:
 			return fmt.Errorf("no changes specified")
 		}
 
-		result, err := client.UpdateIncident(args[0], inc)
+		result, err := client.UpdateIncident(context.Background(), args[0], inc)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

@@ -1,13 +1,14 @@
 package ping
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/api"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -95,7 +96,7 @@ Example:
 			headers[parts[0]] = parts[1]
 		}
 
-		monitor := &api.Monitor{
+		monitor := &spork.Monitor{
 			Target:          rawURL,
 			Name:            name,
 			Type:            addType,
@@ -113,7 +114,7 @@ Example:
 			Tags:            addTags,
 		}
 
-		result, err := client.CreateMonitor(monitor)
+		result, err := client.CreateMonitor(context.Background(), monitor)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

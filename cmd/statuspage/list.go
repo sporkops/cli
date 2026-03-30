@@ -1,6 +1,7 @@
 package statuspage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -19,7 +20,7 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
-		pages, err := client.ListStatusPages()
+		pages, err := client.ListStatusPages(context.Background())
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

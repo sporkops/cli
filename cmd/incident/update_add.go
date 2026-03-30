@@ -1,12 +1,13 @@
 package incident
 
 import (
+	"context"
 	"fmt"
 	"os"
 
-	"github.com/sporkops/cli/internal/api"
-	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/pkg/spork"
 	"github.com/spf13/cobra"
 )
 
@@ -41,7 +42,7 @@ Examples:
 			return fmt.Errorf("at least one of --status or --message is required")
 		}
 
-		upd := &api.IncidentUpdate{}
+		upd := &spork.IncidentUpdate{}
 		if hasStatus {
 			if !validStatuses[updateAddStatus] {
 				return fmt.Errorf("invalid --status %q: must be investigating, identified, monitoring, or resolved", updateAddStatus)
@@ -55,7 +56,7 @@ Examples:
 			upd.Message = updateAddMessage
 		}
 
-		result, err := client.CreateIncidentUpdate(args[0], upd)
+		result, err := client.CreateIncidentUpdate(context.Background(), args[0], upd)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

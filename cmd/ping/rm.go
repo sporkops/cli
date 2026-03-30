@@ -2,6 +2,7 @@ package ping
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -47,7 +48,7 @@ var rmCmd = &cobra.Command{
 			}
 		}
 
-		if err := client.DeleteMonitor(id); err != nil {
+		if err := client.DeleteMonitor(context.Background(), id); err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
 			}

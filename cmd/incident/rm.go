@@ -2,6 +2,7 @@ package incident
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -37,7 +38,7 @@ Example:
 			}
 		}
 
-		if err := client.DeleteIncident(args[0]); err != nil {
+		if err := client.DeleteIncident(context.Background(), args[0]); err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
 			}

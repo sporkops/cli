@@ -1,6 +1,7 @@
 package alertchannel
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -25,7 +26,7 @@ Example:
 			return err
 		}
 
-		ch, err := client.GetAlertChannel(args[0])
+		ch, err := client.GetAlertChannel(context.Background(), args[0])
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err

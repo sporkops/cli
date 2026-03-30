@@ -1,6 +1,7 @@
 package ping
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -24,7 +25,7 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 
-		monitors, err := client.ListMonitors()
+		monitors, err := client.ListMonitors(context.Background())
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
