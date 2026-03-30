@@ -24,9 +24,16 @@ var (
 	createComponents       []string
 	createComponentGroups  []string
 	createEmailSubscribers bool
+	createFontFamily       string
+	createHeaderStyle      string
 )
 
 var slugRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$`)
+var accentColorRegex = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+
+var validThemes = map[string]bool{"light": true, "dark": true, "blue": true, "midnight": true}
+var validFontFamilies = map[string]bool{"system": true, "sans-serif": true, "serif": true, "monospace": true}
+var validHeaderStyles = map[string]bool{"default": true, "banner": true, "minimal": true}
 
 var createCmd = &cobra.Command{
 	Use:   "create",
@@ -56,17 +63,17 @@ Component group format: name=<name>[,order=<n>]`,
 			return fmt.Errorf("invalid --slug %q: must be 2-63 lowercase alphanumeric characters or hyphens, cannot start/end with hyphen", createSlug)
 		}
 
-		// Validate theme
-		if createTheme != "light" && createTheme != "dark" {
-			return fmt.Errorf("invalid --theme %q: must be light or dark", createTheme)
+		if !validThemes[createTheme] {
+			return fmt.Errorf("invalid --theme %q: must be light, dark, blue, or midnight", createTheme)
 		}
-
-		// Validate accent color if provided
-		if createAccentColor != "" {
-			matched, _ := regexp.MatchString(`^#[0-9a-fA-F]{6}$`, createAccentColor)
-			if !matched {
-				return fmt.Errorf("invalid --accent-color %q: must be a hex color like #ff0000", createAccentColor)
-			}
+		if createAccentColor != "" && !accentColorRegex.MatchString(createAccentColor) {
+			return fmt.Errorf("invalid --accent-color %q: must be a hex color like #ff0000", createAccentColor)
+		}
+		if !validFontFamilies[createFontFamily] {
+			return fmt.Errorf("invalid --font-family %q: must be system, sans-serif, serif, or monospace", createFontFamily)
+		}
+		if !validHeaderStyles[createHeaderStyle] {
+			return fmt.Errorf("invalid --header-style %q: must be default, banner, or minimal", createHeaderStyle)
 		}
 
 		// Validate logo URL if provided
@@ -91,6 +98,8 @@ Component group format: name=<name>[,order=<n>]`,
 			Slug:                    createSlug,
 			Theme:                   createTheme,
 			AccentColor:             createAccentColor,
+			FontFamily:              createFontFamily,
+			HeaderStyle:             createHeaderStyle,
 			LogoURL:                 createLogoURL,
 			IsPublic:                createPublic,
 			Password:                createPassword,
@@ -135,7 +144,7 @@ Component group format: name=<name>[,order=<n>]`,
 func init() {
 	createCmd.Flags().StringVar(&createName, "name", "", "status page name (required)")
 	createCmd.Flags().StringVar(&createSlug, "slug", "", "URL slug (required, 2-63 lowercase alphanumeric/hyphens)")
-	createCmd.Flags().StringVar(&createTheme, "theme", "light", "color theme: light, dark")
+	createCmd.Flags().StringVar(&createTheme, "theme", "light", "color theme: light, dark, blue, midnight")
 	createCmd.Flags().StringVar(&createAccentColor, "accent-color", "", "accent color as hex (e.g. #0066ff)")
 	createCmd.Flags().StringVar(&createLogoURL, "logo-url", "", "logo URL (must be https)")
 	createCmd.Flags().BoolVar(&createPublic, "public", true, "whether the status page is publicly accessible")
@@ -143,6 +152,8 @@ func init() {
 	createCmd.Flags().StringVar(&createDomain, "domain", "", "custom domain (requires CNAME to status.sporkops.com)")
 	createCmd.Flags().StringArrayVar(&createComponents, "component", nil, "component as monitor_id=<id>,name=<name>[,description=<text>][,group_id=<id>][,order=<n>] (repeatable)")
 	createCmd.Flags().StringArrayVar(&createComponentGroups, "component-group", nil, "component group as name=<name>[,order=<n>] (repeatable)")
+	createCmd.Flags().StringVar(&createFontFamily, "font-family", "system", "Font family for the status page (system, sans-serif, serif, monospace)")
+	createCmd.Flags().StringVar(&createHeaderStyle, "header-style", "default", "Header style for the status page (default, banner, minimal)")
 	createCmd.Flags().BoolVar(&createEmailSubscribers, "email-subscribers", false, "enable email subscriber notifications")
 	createCmd.MarkFlagRequired("name")
 	createCmd.MarkFlagRequired("slug")

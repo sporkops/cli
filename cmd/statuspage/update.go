@@ -3,7 +3,7 @@ package statuspage
 import (
 	"fmt"
 	"os"
-	"regexp"
+
 	"strings"
 
 	"github.com/sporkops/cli/internal/api"
@@ -24,6 +24,8 @@ var (
 	updateComponents       []string
 	updateComponentGroups  []string
 	updateEmailSubscribers bool
+	updateFontFamily       string
+	updateHeaderStyle      string
 )
 
 var updateCmd = &cobra.Command{
@@ -83,15 +85,28 @@ Note: --component replaces all existing components.`,
 			hasChanges = true
 		}
 		if cmd.Flags().Changed("theme") {
-			if updateTheme != "light" && updateTheme != "dark" {
-				return fmt.Errorf("invalid --theme %q: must be light or dark", updateTheme)
+			if !validThemes[updateTheme] {
+				return fmt.Errorf("invalid --theme %q: must be light, dark, blue, or midnight", updateTheme)
 			}
 			current.Theme = updateTheme
 			hasChanges = true
 		}
+		if cmd.Flags().Changed("font-family") {
+			if !validFontFamilies[updateFontFamily] {
+				return fmt.Errorf("invalid --font-family %q: must be system, sans-serif, serif, or monospace", updateFontFamily)
+			}
+			current.FontFamily = updateFontFamily
+			hasChanges = true
+		}
+		if cmd.Flags().Changed("header-style") {
+			if !validHeaderStyles[updateHeaderStyle] {
+				return fmt.Errorf("invalid --header-style %q: must be default, banner, or minimal", updateHeaderStyle)
+			}
+			current.HeaderStyle = updateHeaderStyle
+			hasChanges = true
+		}
 		if cmd.Flags().Changed("accent-color") {
-			matched, _ := regexp.MatchString(`^#[0-9a-fA-F]{6}$`, updateAccentColor)
-			if !matched {
+			if updateAccentColor != "" && !accentColorRegex.MatchString(updateAccentColor) {
 				return fmt.Errorf("invalid --accent-color %q: must be a hex color like #ff0000", updateAccentColor)
 			}
 			current.AccentColor = updateAccentColor
@@ -141,7 +156,7 @@ Note: --component replaces all existing components.`,
 
 		if !hasChanges && !hasDomainChange {
 			fmt.Fprintln(os.Stderr, "Nothing to update. Specify at least one flag:")
-			fmt.Fprintln(os.Stderr, "  --name, --slug, --theme, --accent-color, --logo-url, --public, --password, --domain, --component, --component-group, --email-subscribers")
+			fmt.Fprintln(os.Stderr, "  --name, --slug, --theme, --accent-color, --font-family, --header-style, --logo-url, --public, --password, --domain, --component, --component-group, --email-subscribers")
 			return fmt.Errorf("no changes specified")
 		}
 
@@ -153,6 +168,8 @@ Note: --component replaces all existing components.`,
 				Slug:                    current.Slug,
 				Theme:                   current.Theme,
 				AccentColor:             current.AccentColor,
+				FontFamily:              current.FontFamily,
+				HeaderStyle:             current.HeaderStyle,
 				LogoURL:                 current.LogoURL,
 				WebhookURL:              current.WebhookURL,
 				IsPublic:                current.IsPublic,
@@ -216,7 +233,7 @@ Note: --component replaces all existing components.`,
 func init() {
 	updateCmd.Flags().StringVar(&updateName, "name", "", "new status page name")
 	updateCmd.Flags().StringVar(&updateSlug, "slug", "", "new URL slug")
-	updateCmd.Flags().StringVar(&updateTheme, "theme", "", "color theme: light, dark")
+	updateCmd.Flags().StringVar(&updateTheme, "theme", "", "color theme: light, dark, blue, midnight")
 	updateCmd.Flags().StringVar(&updateAccentColor, "accent-color", "", "accent color as hex (e.g. #0066ff)")
 	updateCmd.Flags().StringVar(&updateLogoURL, "logo-url", "", "logo URL (must be https)")
 	updateCmd.Flags().BoolVar(&updatePublic, "public", true, "whether the status page is publicly accessible")
@@ -225,5 +242,7 @@ func init() {
 	updateCmd.Flags().BoolVar(&updateRemoveDomain, "remove-domain", false, "remove the custom domain")
 	updateCmd.Flags().StringArrayVar(&updateComponents, "component", nil, "component as monitor_id=<id>,name=<name>[,description=<text>][,group_id=<id>][,order=<n>] (replaces all)")
 	updateCmd.Flags().StringArrayVar(&updateComponentGroups, "component-group", nil, "component group as name=<name>[,order=<n>] (replaces all)")
+	updateCmd.Flags().StringVar(&updateFontFamily, "font-family", "", "Font family for the status page (system, sans-serif, serif, monospace)")
+	updateCmd.Flags().StringVar(&updateHeaderStyle, "header-style", "", "Header style for the status page (default, banner, minimal)")
 	updateCmd.Flags().BoolVar(&updateEmailSubscribers, "email-subscribers", false, "enable/disable email subscriber notifications")
 }

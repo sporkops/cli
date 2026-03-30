@@ -121,6 +121,8 @@ type StatusPage struct {
 	DomainStatus            string            `json:"domain_status,omitempty"`
 	Theme                   string            `json:"theme,omitempty"`
 	AccentColor             string            `json:"accent_color,omitempty"`
+	FontFamily              string            `json:"font_family,omitempty"`
+	HeaderStyle             string            `json:"header_style,omitempty"`
 	LogoURL                 string            `json:"logo_url,omitempty"`
 	WebhookURL              string            `json:"webhook_url,omitempty"`
 	EmailSubscribersEnabled bool              `json:"email_subscribers_enabled"`
