@@ -77,10 +77,14 @@ Example:
 		if len(sp.ComponentGroups) > 0 {
 			fmt.Println()
 			fmt.Println("Component Groups:")
-			groupHeaders := []string{"ID", "NAME", "ORDER"}
+			groupHeaders := []string{"ID", "NAME", "DESCRIPTION", "ORDER"}
 			groupRows := make([][]string, len(sp.ComponentGroups))
 			for i, g := range sp.ComponentGroups {
-				groupRows[i] = []string{g.ID, g.Name, strconv.Itoa(g.Order)}
+				desc := "-"
+				if g.Description != "" {
+					desc = g.Description
+				}
+				groupRows[i] = []string{g.ID, g.Name, desc, strconv.Itoa(g.Order)}
 			}
 			output.PrintTable(groupHeaders, groupRows)
 		}

@@ -249,7 +249,7 @@ func init() {
 	updateCmd.Flags().StringVar(&updateDomain, "domain", "", "set custom domain (requires CNAME to status.sporkops.com)")
 	updateCmd.Flags().BoolVar(&updateRemoveDomain, "remove-domain", false, "remove the custom domain")
 	updateCmd.Flags().StringArrayVar(&updateComponents, "component", nil, "component as monitor_id=<id>,name=<name>[,description=<text>][,group_id=<id>][,order=<n>] (replaces all)")
-	updateCmd.Flags().StringArrayVar(&updateComponentGroups, "component-group", nil, "component group as name=<name>[,order=<n>] (replaces all)")
+	updateCmd.Flags().StringArrayVar(&updateComponentGroups, "component-group", nil, "component group as name=<name>[,description=<text>][,order=<n>] (replaces all)")
 	updateCmd.Flags().StringVar(&updateFontFamily, "font-family", "", "Font family for the status page (system, sans-serif, serif, monospace)")
 	updateCmd.Flags().StringVar(&updateHeaderStyle, "header-style", "", "Header style for the status page (default, banner, minimal)")
 	updateCmd.Flags().BoolVar(&updateEmailSubscribers, "email-subscribers", false, "enable/disable email subscriber notifications")

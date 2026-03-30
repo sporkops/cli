@@ -134,9 +134,10 @@ type StatusPage struct {
 
 // ComponentGroup organizes components into named sections on the status page.
 type ComponentGroup struct {
-	ID    string `json:"id,omitempty"`
-	Name  string `json:"name"`
-	Order int    `json:"order"`
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Order       int    `json:"order"`
 }
 
 // StatusComponent maps a monitor to a display name on a status page.
