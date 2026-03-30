@@ -19,6 +19,9 @@ var (
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show current status of all monitors",
+	Example: `  spork ping status
+  spork ping status --status down
+  spork ping status --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
 		if err != nil {

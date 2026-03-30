@@ -9,15 +9,22 @@ import (
 
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
-var forceRemove bool
+var (
+	forceRemove bool
+	yesRemove   bool
+)
 
 var rmCmd = &cobra.Command{
 	Use:   "rm <id|url>",
 	Short: "Remove a monitor",
-	Long:  "Remove an uptime monitor by ID or URL.\n\nExample:\n  spork ping rm https://example.com\n  spork ping rm abc123 --force",
-	Args:  cobra.ExactArgs(1),
+	Long:  "Remove an uptime monitor by ID or URL.",
+	Example: `  spork ping rm https://example.com
+  spork ping rm abc123 --yes
+  spork ping rm abc123 --force`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
 		if err != nil {
@@ -33,12 +40,18 @@ var rmCmd = &cobra.Command{
 			return err
 		}
 
-		if !forceRemove {
+		skipPrompt := forceRemove || yesRemove
+		if !skipPrompt {
+			// Skip prompt in non-interactive mode
+			isJSON := cmd.Root().Flag("json").Changed
+			if !term.IsTerminal(int(os.Stdout.Fd())) || isJSON {
+				return fmt.Errorf("refusing to delete without --yes in non-interactive mode")
+			}
 			label := id
 			if name != "" {
 				label = name
 			}
-			fmt.Printf("Remove monitor %q? [y/N] ", label)
+			fmt.Printf("Delete monitor %q? [y/N] ", label)
 			reader := bufio.NewReader(os.Stdin)
 			answer, _ := reader.ReadString('\n')
 			answer = strings.TrimSpace(strings.ToLower(answer))
@@ -67,4 +80,5 @@ var rmCmd = &cobra.Command{
 
 func init() {
 	rmCmd.Flags().BoolVarP(&forceRemove, "force", "f", false, "skip confirmation prompt")
+	rmCmd.Flags().BoolVarP(&yesRemove, "yes", "y", false, "skip confirmation prompt")
 }

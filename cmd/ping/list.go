@@ -20,6 +20,9 @@ var (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all monitors",
+	Example: `  spork ping list
+  spork ping list --status up
+  spork ping list --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
 		if err != nil {
