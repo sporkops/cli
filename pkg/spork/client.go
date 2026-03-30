@@ -1,9 +1,53 @@
 // Package spork provides a Go client for the Spork API.
 //
-// Create a client with an API key:
+// This is the official Go SDK for Spork (https://sporkops.com), used by both
+// the Spork CLI and Terraform provider. It provides typed CRUD operations for
+// monitors, alert channels, status pages, incidents, and API keys.
 //
-//	client := spork.NewClient(spork.WithAPIKey("sk_..."))
+// # Authentication
+//
+// All API calls require an API key (prefixed with "sk_"). Create one at
+// https://sporkops.com/settings/api-keys or via the CLI: spork api-key create.
+//
+// # Quick start
+//
+//	client := spork.NewClient(spork.WithAPIKey("sk_live_..."))
+//
+//	// Create a monitor
+//	monitor, err := client.CreateMonitor(ctx, &spork.Monitor{
+//	    Name:   "API Health",
+//	    Target: "https://api.example.com/health",
+//	})
+//
+//	// List all monitors
 //	monitors, err := client.ListMonitors(ctx)
+//
+//	// Handle errors
+//	if spork.IsNotFound(err) {
+//	    // resource was deleted
+//	}
+//
+// # Configuration
+//
+// The client supports functional options:
+//
+//	client := spork.NewClient(
+//	    spork.WithAPIKey(os.Getenv("SPORK_API_KEY")),
+//	    spork.WithBaseURL("https://api.sporkops.com/v1"),  // default
+//	    spork.WithUserAgent("my-app/1.0"),
+//	    spork.WithHTTPClient(customHTTPClient),
+//	)
+//
+// # Error handling
+//
+// API errors are returned as *APIError with status code, error code, message,
+// and request ID. Use the helper functions IsNotFound, IsUnauthorized,
+// IsPaymentRequired, IsForbidden, and IsRateLimited for classification.
+//
+// # Retries
+//
+// The client automatically retries transient errors (429, 503, 504) with
+// exponential backoff (up to 3 retries). It respects Retry-After headers.
 package spork
 
 import (
