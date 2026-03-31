@@ -8,7 +8,7 @@ import (
 
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
-	"github.com/sporkops/cli/pkg/spork"
+	"github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
 )
 

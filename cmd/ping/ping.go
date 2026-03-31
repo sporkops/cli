@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sporkops/cli/pkg/spork"
+	"github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
 )
 

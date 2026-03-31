@@ -8,11 +8,6 @@
 
 Spork is uptime monitoring that lives in your terminal. Add a monitor in seconds, get alerted when things break, and check status without leaving your workflow.
 
-<!-- TODO: Replace with an asciinema recording of the quickstart flow.
-     Record: asciinema rec demo.cast
-     Embed:  [![asciicast](https://asciinema.org/a/RECORDING_ID.svg)](https://asciinema.org/a/RECORDING_ID)
-     Or convert to GIF: agg demo.cast demo.gif -->
-
 ## Quickstart
 
 ```sh

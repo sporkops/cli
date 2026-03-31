@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/sporkops/cli/internal/auth"
-	"github.com/sporkops/cli/pkg/spork"
+	"github.com/sporkops/spork-go"
 )
 
 // RequireAuth loads the stored token and returns an API client.

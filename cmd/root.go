@@ -10,7 +10,7 @@ import (
 	"github.com/sporkops/cli/cmd/incident"
 	"github.com/sporkops/cli/cmd/ping"
 	"github.com/sporkops/cli/cmd/statuspage"
-	"github.com/sporkops/cli/pkg/spork"
+	"github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
 )
 

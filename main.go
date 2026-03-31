@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/sporkops/cli/cmd"
-	"github.com/sporkops/cli/pkg/spork"
+	"github.com/sporkops/spork-go"
 )
 
 var version = "dev"
