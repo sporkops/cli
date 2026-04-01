@@ -53,7 +53,7 @@ func Login() (string, error) {
 	// Step 2: print URL and user code; do not open the browser
 	fmt.Printf("Visit this URL to authenticate:\n%s\n\nEnter this code: %s\n\nWaiting for confirmation...\n", browserAuthURL, session.UserCode)
 
-	// Step 4: poll
+	// Step 3: poll
 	deadline := time.Now().Add(loginTimeout)
 	for time.Now().Before(deadline) {
 		time.Sleep(pollInterval)
@@ -71,7 +71,10 @@ func Login() (string, error) {
 }
 
 func pollSession(deviceCode string) (apiKey string, done bool, err error) {
-	body, _ := json.Marshal(map[string]string{"device_code": deviceCode})
+	body, err := json.Marshal(map[string]string{"device_code": deviceCode})
+	if err != nil {
+		return "", false, fmt.Errorf("encoding poll request: %w", err)
+	}
 	resp, err := authHTTPClient.Post(apiBase+"/cli/auth/sessions/poll", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return "", false, fmt.Errorf("polling auth session: %w", err)

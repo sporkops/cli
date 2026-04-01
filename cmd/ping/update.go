@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/sporkops/spork-go"
@@ -53,14 +52,12 @@ var updateCmd = &cobra.Command{
 
 		// Validate flags that were explicitly set.
 		if cmd.Flags().Changed("type") {
-			validTypes := map[string]bool{"http": true, "ssl": true, "dns": true, "keyword": true, "tcp": true, "ping": true}
-			if !validTypes[updateType] {
+			if !validMonitorTypes[updateType] {
 				return fmt.Errorf("invalid --type %q: must be one of http, ssl, dns, keyword, tcp, ping", updateType)
 			}
 		}
 		if cmd.Flags().Changed("method") {
-			validMethods := map[string]bool{"GET": true, "HEAD": true, "POST": true, "PUT": true}
-			if !validMethods[updateMethod] {
+			if !validHTTPMethods[updateMethod] {
 				return fmt.Errorf("invalid --method %q: must be one of GET, HEAD, POST, PUT", updateMethod)
 			}
 		}
@@ -131,12 +128,12 @@ var updateCmd = &cobra.Command{
 		if cmd.Flags().Changed("header") {
 			headers := make(map[string]string)
 			for _, kv := range updateHeaders {
-				parts := strings.SplitN(kv, "=", 2)
-				if len(parts) != 2 {
-					fmt.Fprintf(os.Stderr, "Error: invalid header format %q, expected key=value\n", kv)
+				k, v, err := cmdutil.ParseKeyValue(kv)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error: invalid header: %s\n", err)
 					return fmt.Errorf("invalid header: %s", kv)
 				}
-				headers[parts[0]] = parts[1]
+				headers[k] = v
 			}
 			update.Headers = headers
 			hasChanges = true

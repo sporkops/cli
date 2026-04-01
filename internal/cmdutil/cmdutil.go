@@ -4,10 +4,21 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sporkops/cli/internal/auth"
 	"github.com/sporkops/spork-go"
 )
+
+// ParseKeyValue splits a "key=value" string and returns the key and value.
+// It returns an error if the input is not in "key=value" format.
+func ParseKeyValue(input string) (string, string, error) {
+	parts := strings.SplitN(input, "=", 2)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid format %q, expected key=value", input)
+	}
+	return parts[0], parts[1], nil
+}
 
 // RequireAuth loads the stored token and returns an API client.
 // If no token is found, it prints login instructions and returns an error.

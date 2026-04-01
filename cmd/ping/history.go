@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
-	"time"
 
-	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -35,15 +33,6 @@ var historyCmd = &cobra.Command{
 			return err
 		}
 
-		monitor, err := client.GetMonitor(context.Background(), id)
-		if err != nil {
-			if cmdutil.HandleAPIError(err) {
-				return err
-			}
-			fmt.Fprintf(os.Stderr, "Error fetching monitor: %s\n", err)
-			return err
-		}
-
 		results, err := client.GetMonitorResults(context.Background(), id, historyLimit)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
@@ -61,28 +50,6 @@ var historyCmd = &cobra.Command{
 			fmt.Println("No check results yet.")
 			return nil
 		}
-
-		// Build graph points and render the response time graph
-		graphPoints := make([]output.GraphPoint, len(results))
-		for i, r := range results {
-			statusMatch := monitor.ExpectedStatus == 0 || r.StatusCode == monitor.ExpectedStatus
-			label := r.CheckedAt
-			// Try to extract a short time label from the timestamp
-			if t, err := time.Parse(time.RFC3339, r.CheckedAt); err == nil {
-				label = t.Format("15:04")
-			} else if parts := strings.Fields(r.CheckedAt); len(parts) >= 2 {
-				label = parts[1]
-				if len(label) > 5 {
-					label = label[:5]
-				}
-			}
-			graphPoints[i] = output.GraphPoint{
-				ResponseTimeMs: r.ResponseTimeMs,
-				StatusMatch:    statusMatch,
-				Label:          label,
-			}
-		}
-		output.PrintResponseGraph(graphPoints)
 
 		headers := []string{"TIME", "STATUS", "RESPONSE TIME", "STATUS CODE", "REGION"}
 		rows := make([][]string, len(results))
