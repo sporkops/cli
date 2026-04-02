@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
@@ -18,7 +17,10 @@ var (
 	addConfigArgs []string
 )
 
-var validTypes = []string{"email", "webhook", "slack", "discord", "teams", "pagerduty", "telegram", "googlechat"}
+var validTypes = map[string]bool{
+	"email": true, "webhook": true, "slack": true, "discord": true,
+	"teams": true, "pagerduty": true, "telegram": true, "googlechat": true,
+}
 
 var addCmd = &cobra.Command{
 	Use:   "add",
@@ -37,27 +39,20 @@ Examples:
 		}
 
 		// Validate type
-		validType := false
-		for _, t := range validTypes {
-			if addType == t {
-				validType = true
-				break
-			}
-		}
-		if !validType {
-			fmt.Fprintf(os.Stderr, "Error: invalid type %q. Must be one of: %s\n", addType, strings.Join(validTypes, ", "))
+		if !validTypes[addType] {
+			fmt.Fprintf(os.Stderr, "Error: invalid type %q. Must be one of: email, webhook, slack, discord, teams, pagerduty, telegram, googlechat\n", addType)
 			return fmt.Errorf("invalid type: %s", addType)
 		}
 
 		// Parse --config key=value pairs
 		config := make(map[string]string)
 		for _, kv := range addConfigArgs {
-			parts := strings.SplitN(kv, "=", 2)
-			if len(parts) != 2 {
-				fmt.Fprintf(os.Stderr, "Error: invalid config format %q, expected key=value\n", kv)
+			k, v, err := cmdutil.ParseKeyValue(kv)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: invalid config: %s\n", err)
 				return fmt.Errorf("invalid config: %s", kv)
 			}
-			config[parts[0]] = parts[1]
+			config[k] = v
 		}
 
 		ch := &spork.AlertChannel{

@@ -9,6 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// validMonitorTypes lists allowed monitor types for add and update commands.
+var validMonitorTypes = map[string]bool{"http": true, "ssl": true, "dns": true, "keyword": true, "tcp": true, "ping": true}
+
+// validHTTPMethods lists allowed HTTP methods for add and update commands.
+var validHTTPMethods = map[string]bool{"GET": true, "HEAD": true, "POST": true, "PUT": true}
+
 // Cmd is the `spork ping` parent command.
 var Cmd = &cobra.Command{
 	Use:   "ping",

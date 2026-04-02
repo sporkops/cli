@@ -3,6 +3,7 @@ package apikey
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
@@ -23,7 +24,7 @@ var listCmd = &cobra.Command{
 			if cmdutil.HandleAPIError(err) {
 				return err
 			}
-			fmt.Printf("Error listing API keys: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error listing API keys: %s\n", err)
 			return err
 		}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -253,13 +254,9 @@ func parseKeyValuePairs(arg string, validKeys map[string]bool) (map[string]strin
 	}
 
 	// Sort by position
-	for i := 0; i < len(positions); i++ {
-		for j := i + 1; j < len(positions); j++ {
-			if positions[j].start < positions[i].start {
-				positions[i], positions[j] = positions[j], positions[i]
-			}
-		}
-	}
+	sort.Slice(positions, func(i, j int) bool {
+		return positions[i].start < positions[j].start
+	})
 
 	// Extract values: each value runs from valAt to the start of the next key (minus the comma)
 	for idx, kp := range positions {

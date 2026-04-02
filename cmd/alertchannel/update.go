@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
@@ -51,12 +50,12 @@ Examples:
 		}
 		if cmd.Flags().Changed("config") {
 			for _, kv := range updateConfigArgs {
-				parts := strings.SplitN(kv, "=", 2)
-				if len(parts) != 2 {
-					fmt.Fprintf(os.Stderr, "Error: invalid config format %q, expected key=value\n", kv)
+				k, v, err := cmdutil.ParseKeyValue(kv)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error: invalid config: %s\n", err)
 					return fmt.Errorf("invalid config: %s", kv)
 				}
-				existing.Config[parts[0]] = parts[1]
+				existing.Config[k] = v
 			}
 			hasChanges = true
 		}

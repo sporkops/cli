@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/sporkops/spork-go"
@@ -54,12 +53,10 @@ Example:
 		}
 
 		// Validate flags to catch errors before hitting the API.
-		validTypes := map[string]bool{"http": true, "ssl": true, "dns": true, "keyword": true, "tcp": true, "ping": true}
-		if !validTypes[addType] {
+		if !validMonitorTypes[addType] {
 			return fmt.Errorf("invalid --type %q: must be one of http, ssl, dns, keyword, tcp, ping", addType)
 		}
-		validMethods := map[string]bool{"GET": true, "HEAD": true, "POST": true, "PUT": true}
-		if !validMethods[addMethod] {
+		if !validHTTPMethods[addMethod] {
 			return fmt.Errorf("invalid --method %q: must be one of GET, HEAD, POST, PUT", addMethod)
 		}
 		if addInterval < 60 || addInterval > 86400 {
@@ -88,12 +85,12 @@ Example:
 
 		headers := make(map[string]string)
 		for _, kv := range addHeaders {
-			parts := strings.SplitN(kv, "=", 2)
-			if len(parts) != 2 {
-				fmt.Fprintf(os.Stderr, "Error: invalid header format %q, expected key=value\n", kv)
+			k, v, err := cmdutil.ParseKeyValue(kv)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: invalid header: %s\n", err)
 				return fmt.Errorf("invalid header: %s", kv)
 			}
-			headers[parts[0]] = parts[1]
+			headers[k] = v
 		}
 
 		monitor := &spork.Monitor{

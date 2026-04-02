@@ -27,10 +27,10 @@ var createCmd = &cobra.Command{
 		}
 
 		input := &spork.CreateAPIKeyInput{Name: createName}
-			if createExpires > 0 {
-				input.ExpiresInDays = &createExpires
-			}
-			key, err := client.CreateAPIKey(context.Background(), input)
+		if createExpires > 0 {
+			input.ExpiresInDays = &createExpires
+		}
+		key, err := client.CreateAPIKey(context.Background(), input)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
@@ -60,6 +60,6 @@ var createCmd = &cobra.Command{
 
 func init() {
 	createCmd.Flags().StringVarP(&createName, "name", "n", "", "name for the API key (required)")
-	_ = createCmd.MarkFlagRequired("name")
+	createCmd.MarkFlagRequired("name")
 	createCmd.Flags().IntVar(&createExpires, "expires", 0, "expiry in days (1-365, 0 = never expires)")
 }
