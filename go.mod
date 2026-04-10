@@ -8,6 +8,8 @@ require (
 	golang.org/x/term v0.28.0
 )
 
+replace github.com/sporkops/spork-go => /home/user/spork-go
+
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
