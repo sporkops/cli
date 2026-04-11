@@ -4,7 +4,7 @@ go 1.24.7
 
 require (
 	github.com/spf13/cobra v1.10.2
-	github.com/sporkops/spork-go v0.1.0
+	github.com/sporkops/spork-go v0.3.0
 	golang.org/x/term v0.28.0
 )
 
