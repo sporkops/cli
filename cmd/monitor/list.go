@@ -81,7 +81,7 @@ var listCmd = &cobra.Command{
 func init() {
 	listCmd.Flags().StringVar(&listFilterStatus, "status", "", "filter by status (up, down, degraded, paused, pending)")
 	listCmd.Flags().StringVar(&listFilterType, "type", "", "filter by monitor type")
-	listCmd.Flags().IntVar(&listLimit, "limit", 0, "stop after N monitors (0 means no limit — auto-paginate all)")
+	listCmd.Flags().IntVar(&listLimit, "limit", 0, "max number of monitors to show (0 = no cap, auto-paginate through all)")
 	listCmd.Flags().IntVar(&listPage, "page", 0, "fetch only this 1-indexed page instead of auto-paginating")
 	listCmd.Flags().IntVar(&listPageSize, "page-size", 0, "page size (1-100, default 100) when --page or --limit are set")
 }

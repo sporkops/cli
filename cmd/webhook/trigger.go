@@ -1,18 +1,23 @@
 package webhook
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
 	triggerChannel string
+	triggerYes     bool
+	triggerForce   bool
 )
 
 var triggerCmd = &cobra.Command{
@@ -27,10 +32,17 @@ the channel's URL. Unlike production deliveries the trigger does not
 retry — you see the receiver's first response directly, which is what
 you want for debugging.
 
+Firing a trigger makes a real outbound HTTP request to whatever URL
+the channel is configured with — which may be a production Slack
+alert, a PagerDuty integration that wakes on-call, or an internal
+automation. By default the CLI prompts for confirmation; pass
+--yes or --force to skip.
+
 Events: monitor.down, monitor.up`,
 	Example: `  spork webhook trigger monitor.down --channel ach_abc
+  spork webhook trigger monitor.up --channel ach_abc --yes
   spork webhook trigger monitor.up --channel ach_abc --json`,
-	Args: cobra.ExactArgs(1),
+	Args:      cobra.ExactArgs(1),
 	ValidArgs: []string{"monitor.down", "monitor.up"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if triggerChannel == "" {
@@ -43,6 +55,9 @@ Events: monitor.down, monitor.up`,
 		}
 
 		event := args[0]
+		if err := confirmTrigger(cmd, event, triggerChannel); err != nil {
+			return err
+		}
 		result, err := client.TriggerWebhook(context.Background(), &spork.TriggerWebhookInput{
 			AlertChannelID: triggerChannel,
 			Event:          event,
@@ -70,7 +85,37 @@ Events: monitor.down, monitor.up`,
 
 func init() {
 	triggerCmd.Flags().StringVarP(&triggerChannel, "channel", "c", "", "alert channel ID to fire the event at (required)")
+	triggerCmd.Flags().BoolVarP(&triggerYes, "yes", "y", false, "skip confirmation prompt")
+	triggerCmd.Flags().BoolVarP(&triggerForce, "force", "f", false, "skip confirmation prompt (alias for --yes)")
 	_ = triggerCmd.MarkFlagRequired("channel")
+}
+
+// confirmTrigger prompts before firing a test delivery, since the
+// delivery makes a real outbound HTTP call to whatever URL the channel
+// is configured with (Slack, PagerDuty, internal tooling).
+//
+// Matches the pattern the destructive `rm` commands use:
+//   - --yes / --force skip the prompt.
+//   - Non-TTY / structured-output mode refuses without an explicit --yes,
+//     because a prompt would block forever and a silent fire is worse
+//     than a usage error.
+//   - Interactive TTY users see a "[y/N]" prompt defaulting to no.
+func confirmTrigger(cmd *cobra.Command, event, channelID string) error {
+	if triggerYes || triggerForce {
+		return nil
+	}
+	isJSON := cmdutil.Structured(cmd)
+	if !term.IsTerminal(int(os.Stdout.Fd())) || isJSON {
+		return fmt.Errorf("refusing to fire webhook trigger without --yes in non-interactive mode")
+	}
+	fmt.Printf("Fire a real %s webhook delivery to channel %q? This may wake on-call / open incidents. [y/N] ", event, channelID)
+	reader := bufio.NewReader(os.Stdin)
+	answer, _ := reader.ReadString('\n')
+	answer = strings.TrimSpace(strings.ToLower(answer))
+	if answer != "y" && answer != "yes" {
+		return fmt.Errorf("cancelled")
+	}
+	return nil
 }
 
 // renderTriggerResult writes a human-readable summary of the delivery to

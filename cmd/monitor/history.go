@@ -68,5 +68,5 @@ var historyCmd = &cobra.Command{
 }
 
 func init() {
-	historyCmd.Flags().IntVar(&historyLimit, "limit", 20, "number of results to show")
+	historyCmd.Flags().IntVar(&historyLimit, "limit", 20, "max number of results to show")
 }
