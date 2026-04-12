@@ -31,8 +31,8 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(channels)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, channels)
 		}
 
 		if len(channels) == 0 {

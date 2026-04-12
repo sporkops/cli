@@ -40,8 +40,8 @@ var listCmd = &cobra.Command{
 
 		monitors = filterMonitors(monitors, listFilterStatus, listFilterType)
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(monitors)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, monitors)
 		}
 
 		if len(monitors) == 0 {

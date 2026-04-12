@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/sporkops/cli/cmd/alertchannel"
 	"github.com/sporkops/cli/cmd/apikey"
@@ -11,14 +12,18 @@ import (
 	"github.com/sporkops/cli/cmd/members"
 	"github.com/sporkops/cli/cmd/monitor"
 	"github.com/sporkops/cli/cmd/statuspage"
+	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
 )
 
 var (
-	version    = "dev"
-	jsonFlag   bool
-	outputFlag string
+	version     = "dev"
+	jsonFlag    bool
+	outputFlag  string
+	debugFlag   bool
+	noColorFlag bool
 )
 
 // SetVersion sets the CLI version string (injected via ldflags).
@@ -36,6 +41,14 @@ func OutputFormat() string {
 	return outputFlag
 }
 
+// DebugEnabled returns whether the user requested HTTP request/response
+// tracing via --debug (or the SPORK_DEBUG environment variable). Consumed
+// by internal/cmdutil.RequireAuth to wrap the SDK's http.Client in a
+// logging transport.
+func DebugEnabled() bool {
+	return debugFlag
+}
+
 var rootCmd = &cobra.Command{
 	Use:     "spork",
 	Short:   "Spork — uptime monitoring from your terminal",
@@ -48,14 +61,19 @@ var rootCmd = &cobra.Command{
 		}
 		// Validate output flag
 		switch outputFlag {
-		case "table", "json":
+		case "table", "json", "yaml":
 			// supported
-		case "yaml":
-			fmt.Fprintln(os.Stderr, "Warning: YAML output is not yet implemented, falling back to JSON")
-			outputFlag = "json"
-			jsonFlag = true
 		default:
 			return fmt.Errorf("invalid --output %q: must be table, json, or yaml", outputFlag)
+		}
+		// Propagate --debug (or SPORK_DEBUG) to cmdutil so every client it
+		// constructs wraps the HTTP transport in debughttp.Transport.
+		cmdutil.Debug = debugFlag
+		// --no-color forces colors off. The default (nil) honors NO_COLOR
+		// and TTY detection in internal/output.
+		if noColorFlag {
+			off := false
+			output.SetColor(&off)
 		}
 		return nil
 	},
@@ -64,6 +82,12 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "output as JSON (shorthand for --output json)")
 	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "table", "output format: table, json, yaml")
+	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "log HTTP requests and responses to stderr (tokens are redacted)")
+	rootCmd.PersistentFlags().BoolVar(&noColorFlag, "no-color", false, "disable colored output (also honors NO_COLOR env)")
+	// Honor SPORK_DEBUG as a convenience for CI; flag takes precedence.
+	if v := os.Getenv("SPORK_DEBUG"); v == "1" || strings.EqualFold(v, "true") {
+		debugFlag = true
+	}
 	rootCmd.SilenceUsage = true
 	rootCmd.SilenceErrors = true
 	rootCmd.AddCommand(loginCmd)
@@ -127,13 +151,8 @@ var versionCmd = &cobra.Command{
 			"arch":        runtime.GOARCH,
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			enc := fmt.Sprintf(
-				`{"cli_version":%q,"sdk_version":%q,"go_version":%q,"os":%q,"arch":%q}`+"\n",
-				info["cli_version"], info["sdk_version"], info["go_version"], info["os"], info["arch"],
-			)
-			fmt.Print(enc)
-			return nil
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, info)
 		}
 
 		fmt.Printf("spork %s\n", version)

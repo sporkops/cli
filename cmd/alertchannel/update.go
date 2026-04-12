@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 )
@@ -75,8 +74,8 @@ Examples:
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(result)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, result)
 		}
 
 		fmt.Printf("✓ Alert channel updated: %s (%s)\n", result.Name, result.Type)

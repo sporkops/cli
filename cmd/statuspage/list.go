@@ -31,8 +31,8 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(pages)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, pages)
 		}
 
 		if len(pages) == 0 {

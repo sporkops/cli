@@ -45,8 +45,8 @@ Example:
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(sp)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, sp)
 		}
 
 		fmt.Printf("%-20s %s\n", "ID:", sp.ID)

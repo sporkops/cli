@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
@@ -137,8 +136,8 @@ Component group format: name=<name>[,description=<text>][,order=<n>]`,
 			}
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(result)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, result)
 		}
 
 		fmt.Printf("✓ Status page created: %s\n", result.Name)

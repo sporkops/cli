@@ -42,8 +42,8 @@ var historyCmd = &cobra.Command{
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(results)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, results)
 		}
 
 		if len(results) == 0 {
