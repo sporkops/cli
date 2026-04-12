@@ -9,7 +9,7 @@ import (
 	"github.com/sporkops/cli/cmd/apikey"
 	"github.com/sporkops/cli/cmd/incident"
 	"github.com/sporkops/cli/cmd/members"
-	"github.com/sporkops/cli/cmd/ping"
+	"github.com/sporkops/cli/cmd/monitor"
 	"github.com/sporkops/cli/cmd/statuspage"
 	"github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
@@ -69,7 +69,7 @@ func init() {
 	rootCmd.AddCommand(loginCmd)
 	rootCmd.AddCommand(logoutCmd)
 	rootCmd.AddCommand(members.Cmd)
-	rootCmd.AddCommand(ping.Cmd)
+	rootCmd.AddCommand(monitor.Cmd)
 	rootCmd.AddCommand(apikey.Cmd)
 	rootCmd.AddCommand(alertchannel.Cmd)
 	rootCmd.AddCommand(incident.Cmd)

@@ -81,7 +81,7 @@ main() {
     echo ""
     echo "Get started:"
     echo "  spork login"
-    echo "  spork ping add https://yoursite.com"
+    echo "  spork monitor add https://yoursite.com"
     echo ""
     echo "Docs: https://sporkops.com/docs"
 }

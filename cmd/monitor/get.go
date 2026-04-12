@@ -1,4 +1,4 @@
-package ping
+package monitor
 
 import (
 	"context"
@@ -18,9 +18,9 @@ var getCmd = &cobra.Command{
 	Long: `Show full details of a single monitor by ID or URL.
 
 Example:
-  spork ping get abc123
-  spork ping get https://example.com
-  spork ping get abc123 --json`,
+  spork monitor get abc123
+  spork monitor get https://example.com
+  spork monitor get abc123 --json`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
