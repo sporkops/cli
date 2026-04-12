@@ -6,9 +6,10 @@ import (
 
 // Cmd is the `spork api-key` parent command.
 var Cmd = &cobra.Command{
-	Use:   "api-key",
-	Short: "Manage API keys",
-	Long:  "Create, list, and delete API keys for programmatic access.",
+	Use:     "api-key",
+	Aliases: []string{"ak"},
+	Short:   "Manage API keys",
+	Long:    "Create, list, and delete API keys for programmatic access.",
 }
 
 func init() {

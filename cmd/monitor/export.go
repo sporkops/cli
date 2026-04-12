@@ -98,6 +98,12 @@ func init() {
 // The output is deliberately formatted to match what terraform-registry docs
 // show: one attribute per line, two-space indent, no trailing blank lines.
 func writeMonitorHCL(w io.Writer, m *spork.Monitor, resourceName string) error {
+	// Always run the caller-supplied name through hclIdentifier — a
+	// user passing --resource-name "my monitor" would otherwise
+	// produce invalid HCL (`resource "sporkops_monitor" "my monitor"`
+	// doesn't parse). Sanitising here means the exporter is
+	// copy-paste-safe regardless of how the flag was spelled.
+	resourceName = hclIdentifier(resourceName)
 	if resourceName == "" {
 		resourceName = hclIdentifier(m.Name)
 		if resourceName == "" {

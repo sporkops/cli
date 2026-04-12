@@ -9,8 +9,9 @@ import "github.com/spf13/cobra"
 
 // Cmd is the `spork webhook` parent command.
 var Cmd = &cobra.Command{
-	Use:   "webhook",
-	Short: "Test and verify outbound webhook deliveries",
+	Use:     "webhook",
+	Aliases: []string{"wh"},
+	Short:   "Test and verify outbound webhook deliveries",
 	Long: `Tools for working with Spork's outbound webhooks.
 
   - ` + "`trigger`" + ` fires a synthetic, signed event at a webhook alert

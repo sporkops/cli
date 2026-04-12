@@ -18,12 +18,13 @@ var (
 )
 
 var rmCmd = &cobra.Command{
-	Use:   "rm <id|name|slug>",
-	Short: "Remove a status page",
-	Long:  "Remove a status page by ID, name, or slug.",
-	Example: `  spork status-page rm sp_abc123
-  spork status-page rm acme-status --yes
-  spork status-page rm acme-status --force`,
+	Use:     "delete <id|name|slug>",
+	Aliases: []string{"rm", "remove"},
+	Short:   "Delete a status page",
+	Long:    "Delete a status page by ID, name, or slug.",
+	Example: `  spork status-page delete sp_abc123
+  spork status-page delete acme-status --yes
+  spork status-page rm acme-status         # "rm" / "remove" retained as aliases`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()

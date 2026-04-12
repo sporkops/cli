@@ -18,12 +18,13 @@ var (
 )
 
 var rmCmd = &cobra.Command{
-	Use:   "rm <id>",
-	Short: "Remove an alert channel",
-	Long:  "Remove an alert channel by ID.",
-	Example: `  spork alert-channel rm abc123
-  spork alert-channel rm abc123 --yes
-  spork alert-channel rm abc123 --force`,
+	Use:     "delete <id>",
+	Aliases: []string{"rm", "remove"},
+	Short:   "Delete an alert channel",
+	Long:    "Delete an alert channel by ID.",
+	Example: `  spork alert-channel delete abc123
+  spork alert-channel delete abc123 --yes
+  spork alert-channel rm abc123         # "rm" / "remove" retained as aliases`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
