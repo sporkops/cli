@@ -31,6 +31,8 @@ github.com/sporkops/spork-go v0.3.1-0.20260412084215-7d84398c472b h1:SSFNsG5Eu8c
 github.com/sporkops/spork-go v0.3.1-0.20260412084215-7d84398c472b/go.mod h1:T+DMpB6fJcVGfBaEoQ11O9CQ41Cwa1w+U4IXGUpqqoI=
 github.com/sporkops/spork-go v0.3.1-0.20260412144407-114eb34321fd h1:jmQ4NgVjNFW6kpauPBmnlTfcpXi8wFT3UpGnfWTneyg=
 github.com/sporkops/spork-go v0.3.1-0.20260412144407-114eb34321fd/go.mod h1:T+DMpB6fJcVGfBaEoQ11O9CQ41Cwa1w+U4IXGUpqqoI=
+github.com/sporkops/spork-go v0.3.1-0.20260412150725-d13c84036723 h1:zHtIzB6mFK9ga9X6ZzehMxrsTX86bx+ebABedEXJAjI=
+github.com/sporkops/spork-go v0.3.1-0.20260412150725-d13c84036723/go.mod h1:T+DMpB6fJcVGfBaEoQ11O9CQ41Cwa1w+U4IXGUpqqoI=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
