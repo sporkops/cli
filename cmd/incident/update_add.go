@@ -50,8 +50,8 @@ Examples:
 			upd.Status = updateAddStatus
 		}
 		if hasMessage {
-			if len(updateAddMessage) > 10000 {
-				return fmt.Errorf("--message must be at most 10000 characters")
+			if len(updateAddMessage) > 2000 {
+				return fmt.Errorf("--message must be at most 2000 characters")
 			}
 			upd.Message = updateAddMessage
 		}
@@ -79,5 +79,5 @@ Examples:
 
 func init() {
 	updateAddCmd.Flags().StringVar(&updateAddStatus, "status", "", "status: investigating, identified, monitoring, resolved")
-	updateAddCmd.Flags().StringVar(&updateAddMessage, "message", "", "update message (max 10000 chars)")
+	updateAddCmd.Flags().StringVar(&updateAddMessage, "message", "", "update message (max 2000 chars)")
 }

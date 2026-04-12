@@ -20,6 +20,7 @@ func init() {
 	Cmd.AddCommand(rmCmd)
 	Cmd.AddCommand(updateAddCmd)
 	Cmd.AddCommand(updatesCmd)
+	Cmd.AddCommand(recentCmd)
 }
 
 var validStatuses = map[string]bool{
