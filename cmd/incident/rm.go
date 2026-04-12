@@ -18,10 +18,12 @@ var (
 )
 
 var rmCmd = &cobra.Command{
-	Use:   "rm <id>",
-	Short: "Delete an incident",
-	Long:  "Delete an incident by ID.",
-	Example: `  spork incident rm inc_abc123
+	Use:     "delete <id>",
+	Aliases: []string{"rm", "remove"},
+	Short:   "Delete an incident",
+	Long:    "Delete an incident by ID.",
+	Example: `  spork incident delete inc_abc123
+  spork incident rm inc_abc123         # "rm" / "remove" retained as aliases
   spork incident rm inc_abc123 --yes
   spork incident rm inc_abc123 --force`,
 	Args: cobra.ExactArgs(1),

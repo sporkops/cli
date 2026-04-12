@@ -29,9 +29,10 @@ var (
 )
 
 var addCmd = &cobra.Command{
-	Use:   "add <url>",
-	Short: "Add a new uptime monitor",
-	Long: `Add a new uptime monitor for the given URL.
+	Use:     "create <url>",
+	Aliases: []string{"add"},
+	Short:   "Create a new uptime monitor",
+	Long: `Create a new uptime monitor for the given URL.
 
 Example:
   spork monitor add https://example.com

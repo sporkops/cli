@@ -30,7 +30,7 @@ var Cmd = &cobra.Command{
 	Use:     "monitor",
 	Aliases: []string{"ping"},
 	Short:   "Manage uptime monitors",
-	Long:    "Add, list, and manage uptime monitors for your sites and APIs.",
+	Long:    "Create, list, and manage uptime monitors for your sites and APIs.",
 }
 
 func init() {

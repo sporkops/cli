@@ -22,14 +22,15 @@ var validTypes = map[string]bool{
 }
 
 var addCmd = &cobra.Command{
-	Use:   "add",
-	Short: "Create a new alert channel",
+	Use:     "create",
+	Aliases: []string{"add"},
+	Short:   "Create a new alert channel",
 	Long: `Create a new alert channel for downtime notifications.
 
 Examples:
-  spork alert-channel add --type email --name "Ops Team" --config to=ops@example.com
-  spork alert-channel add --type slack --name "Eng Slack" --config url=https://hooks.slack.com/...
-  spork alert-channel add --type webhook --name "Custom Hook" --config url=https://example.com/webhook
+  spork alert-channel create --type email --name "Ops Team" --config to=ops@example.com
+  spork alert-channel create --type slack --name "Eng Slack" --config url=https://hooks.slack.com/...
+  spork alert-channel create --type webhook --name "Custom Hook" --config url=https://example.com/webhook
   spork alert-channel add --type pagerduty --name "PD Oncall" --config integration_key=abc123`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()

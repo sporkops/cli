@@ -13,9 +13,10 @@ import (
 )
 
 var removeCmd = &cobra.Command{
-	Use:   "remove <member-id>",
-	Short: "Remove a member from the organization",
-	Long:  "Remove a member from your organization. This revokes their access immediately.",
+	Use:     "delete <member-id>",
+	Aliases: []string{"remove", "rm"},
+	Short:   "Delete a member from the organization",
+	Long:    "Delete a member from your organization. This revokes their access immediately.",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		memberID := args[0]

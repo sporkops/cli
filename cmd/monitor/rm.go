@@ -18,12 +18,13 @@ var (
 )
 
 var rmCmd = &cobra.Command{
-	Use:   "rm <id|url>",
-	Short: "Remove a monitor",
-	Long:  "Remove an uptime monitor by ID or URL.",
-	Example: `  spork monitor rm https://example.com
-  spork monitor rm abc123 --yes
-  spork monitor rm abc123 --force`,
+	Use:     "delete <id|url>",
+	Aliases: []string{"rm", "remove"},
+	Short:   "Delete a monitor",
+	Long:    "Delete an uptime monitor by ID or URL.",
+	Example: `  spork monitor delete https://example.com
+  spork monitor delete abc123 --yes
+  spork monitor rm abc123         # "rm" / "remove" retained as aliases`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()

@@ -14,9 +14,10 @@ import (
 )
 
 var transferCmd = &cobra.Command{
-	Use:   "transfer <member-id>",
-	Short: "Transfer organization ownership",
-	Long:  "Transfer ownership of the organization to another member. You will become a regular member.",
+	Use:     "transfer-ownership <member-id>",
+	Aliases: []string{"transfer"},
+	Short:   "Transfer organization ownership",
+	Long:    "Transfer ownership of the organization to another member. You will become a regular member.",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		memberID := args[0]
