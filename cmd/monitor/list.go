@@ -15,6 +15,9 @@ import (
 var (
 	listFilterStatus string
 	listFilterType   string
+	listLimit        int
+	listPage         int
+	listPageSize     int
 )
 
 var listCmd = &cobra.Command{
@@ -22,6 +25,8 @@ var listCmd = &cobra.Command{
 	Short: "List all monitors",
 	Example: `  spork monitor list
   spork monitor list --status up
+  spork monitor list --limit 10
+  spork monitor list --page 2 --page-size 25
   spork monitor list --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
@@ -29,7 +34,7 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
-		monitors, err := client.ListMonitors(context.Background())
+		monitors, err := fetchMonitorsForListing(client)
 		if err != nil {
 			if cmdutil.HandleAPIError(err) {
 				return err
@@ -70,6 +75,54 @@ var listCmd = &cobra.Command{
 func init() {
 	listCmd.Flags().StringVar(&listFilterStatus, "status", "", "filter by status (up, down, degraded, paused, pending)")
 	listCmd.Flags().StringVar(&listFilterType, "type", "", "filter by monitor type")
+	listCmd.Flags().IntVar(&listLimit, "limit", 0, "stop after N monitors (0 means no limit — auto-paginate all)")
+	listCmd.Flags().IntVar(&listPage, "page", 0, "fetch only this 1-indexed page instead of auto-paginating")
+	listCmd.Flags().IntVar(&listPageSize, "page-size", 0, "page size (1-100, default 100) when --page or --limit are set")
+}
+
+// fetchMonitorsForListing resolves the caller's pagination intent into the
+// right SDK call. Three modes:
+//
+//   - --page N  → one explicit page (uses ListMonitorsPage).
+//   - --limit N → auto-paginate but stop once we have N items.
+//   - neither   → auto-paginate through every page (ListMonitors default).
+//
+// --page-size controls per_page on the server. It is only consulted when one
+// of --page or --limit is set; otherwise we trust the SDK default.
+func fetchMonitorsForListing(client *spork.Client) ([]spork.Monitor, error) {
+	ctx := context.Background()
+
+	// Explicit single page.
+	if listPage > 0 {
+		opts := spork.ListOptions{Page: listPage, PerPage: listPageSize}
+		monitors, _, err := client.ListMonitorsPage(ctx, opts)
+		return monitors, err
+	}
+
+	// No cap → use the plain auto-paginator.
+	if listLimit <= 0 {
+		return client.ListMonitors(ctx)
+	}
+
+	// Capped auto-pagination: loop ListMonitorsPage until we hit the limit or
+	// run out of pages. Matches how Stripe / PagerDuty CLIs behave under
+	// --limit.
+	var collected []spork.Monitor
+	opts := spork.ListOptions{Page: 1, PerPage: listPageSize}
+	for {
+		page, meta, err := client.ListMonitorsPage(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+		collected = append(collected, page...)
+		if len(collected) >= listLimit {
+			return collected[:listLimit], nil
+		}
+		if !meta.HasMore(len(page)) {
+			return collected, nil
+		}
+		opts.Page = meta.Page + 1
+	}
 }
 
 // filterMonitors applies client-side status and type filters.
