@@ -34,8 +34,8 @@ Example:
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(incidents)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, incidents)
 		}
 
 		if len(incidents) == 0 {

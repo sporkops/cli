@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 
 	"golang.org/x/term"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -17,8 +18,22 @@ const (
 	colorCyan   = "\033[36m"
 )
 
+// colorOverride, when non-nil, forces colors on (true) or off (false) and
+// bypasses the NO_COLOR + TTY auto-detection. Set by SetColor(); the root
+// command wires it from --no-color / --color=auto|always|never.
+var colorOverride *bool
+
+// SetColor overrides automatic color detection. Pass nil to restore the
+// default (honor NO_COLOR + TTY).
+func SetColor(enabled *bool) {
+	colorOverride = enabled
+}
+
 // colorEnabled returns true if color output should be used.
 func colorEnabled() bool {
+	if colorOverride != nil {
+		return *colorOverride
+	}
 	if os.Getenv("NO_COLOR") != "" {
 		return false
 	}
@@ -80,4 +95,28 @@ func PrintJSON(v any) error {
 	}
 	fmt.Println(string(data))
 	return nil
+}
+
+// PrintYAML prints the value as YAML to stdout. Uses 2-space indent to match
+// Kubernetes/Helm conventions; works for any struct the SDK marshals as JSON
+// (we round-trip through JSON so field names and omitempty behaviour match
+// exactly what the API speaks — no second set of tags to keep in sync).
+func PrintYAML(v any) error {
+	// Round-trip through JSON so we pick up json tags (including
+	// omitempty) without requiring every SDK struct to also carry yaml
+	// tags. The intermediate map is then YAML-encoded.
+	b, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Errorf("marshaling for YAML: %w", err)
+	}
+	var intermediate any
+	if err := json.Unmarshal(b, &intermediate); err != nil {
+		return fmt.Errorf("unmarshaling for YAML: %w", err)
+	}
+	enc := yaml.NewEncoder(os.Stdout)
+	enc.SetIndent(2)
+	if err := enc.Encode(intermediate); err != nil {
+		return fmt.Errorf("encoding YAML: %w", err)
+	}
+	return enc.Close()
 }

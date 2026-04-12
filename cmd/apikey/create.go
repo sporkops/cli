@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
@@ -39,8 +38,8 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(key)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, key)
 		}
 
 		expiresStr := "never"

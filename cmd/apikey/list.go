@@ -28,8 +28,8 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(keys)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, keys)
 		}
 
 		if len(keys) == 0 {

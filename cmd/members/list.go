@@ -19,7 +19,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		isJSON := cmd.Root().Flag("json").Changed
+		isJSON := cmdutil.Structured(cmd)
 
 		spinner := output.NewSpinner("Loading members...")
 		if spinner != nil {
@@ -38,7 +38,7 @@ var listCmd = &cobra.Command{
 		}
 
 		if isJSON {
-			return output.PrintJSON(members)
+			return cmdutil.PrintStructured(cmd, members)
 		}
 
 		if len(members) == 0 {

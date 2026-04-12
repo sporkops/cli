@@ -35,7 +35,7 @@ var rmCmd = &cobra.Command{
 
 		skipPrompt := forceRemove || yesRemove
 		if !skipPrompt {
-			isJSON := cmd.Root().Flag("json").Changed
+			isJSON := cmdutil.Structured(cmd)
 			if !term.IsTerminal(int(os.Stdout.Fd())) || isJSON {
 				return fmt.Errorf("refusing to delete without --yes in non-interactive mode")
 			}

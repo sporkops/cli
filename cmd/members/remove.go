@@ -24,7 +24,7 @@ var removeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		isJSON := cmd.Root().Flag("json").Changed
+		isJSON := cmdutil.Structured(cmd)
 
 		force, _ := cmd.Flags().GetBool("force")
 		yes, _ := cmd.Flags().GetBool("yes")

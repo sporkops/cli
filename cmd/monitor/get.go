@@ -46,8 +46,8 @@ Example:
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(monitor)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, monitor)
 		}
 
 		// Detailed key-value output showing all fields.

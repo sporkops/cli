@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/sporkops/cli/internal/cmdutil"
-	"github.com/sporkops/cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -35,8 +34,8 @@ Example:
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(ch)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, ch)
 		}
 
 		fmt.Printf("%-20s %s\n", "ID:", ch.ID)

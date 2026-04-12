@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/sporkops/cli/internal/auth"
-	"github.com/sporkops/cli/internal/output"
+	"github.com/sporkops/cli/internal/cmdutil"
 	spork "github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
 )
@@ -35,8 +35,8 @@ var whoamiCmd = &cobra.Command{
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(org)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, org)
 		}
 
 		name := org.Name

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/sporkops/cli/internal/cmdutil"
-	"github.com/sporkops/cli/internal/output"
 	spork "github.com/sporkops/spork-go"
 	"golang.org/x/term"
 	"github.com/spf13/cobra"
@@ -26,7 +25,7 @@ var transferCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		isJSON := cmd.Root().Flag("json").Changed
+		isJSON := cmdutil.Structured(cmd)
 
 		force, _ := cmd.Flags().GetBool("force")
 		yes, _ := cmd.Flags().GetBool("yes")
@@ -56,7 +55,7 @@ var transferCmd = &cobra.Command{
 		}
 
 		if isJSON {
-			return output.PrintJSON(result)
+			return cmdutil.PrintStructured(cmd, result)
 		}
 
 		fmt.Println("Ownership transferred.")

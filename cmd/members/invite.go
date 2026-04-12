@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/sporkops/cli/internal/cmdutil"
-	"github.com/sporkops/cli/internal/output"
 	spork "github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +31,7 @@ var inviteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		isJSON := cmd.Root().Flag("json").Changed
+		isJSON := cmdutil.Structured(cmd)
 
 		member, err := client.InviteMember(context.Background(), &spork.InviteMemberInput{
 			Email: email,
@@ -47,7 +46,7 @@ var inviteCmd = &cobra.Command{
 		}
 
 		if isJSON {
-			return output.PrintJSON(member)
+			return cmdutil.PrintStructured(cmd, member)
 		}
 
 		fmt.Printf("Invited %s as %s (ID: %s, Status: %s)\n", member.Email, member.Role, member.ID, member.Status)

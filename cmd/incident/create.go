@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/sporkops/cli/internal/cmdutil"
-	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
 )
@@ -74,8 +73,8 @@ Examples:
 			return err
 		}
 
-		if cmd.Root().Flag("json").Changed {
-			return output.PrintJSON(result)
+		if cmdutil.Structured(cmd) {
+			return cmdutil.PrintStructured(cmd, result)
 		}
 
 		fmt.Printf("✓ Incident created: %s\n", result.Title)
