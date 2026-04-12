@@ -75,6 +75,13 @@ var rootCmd = &cobra.Command{
 			off := false
 			output.SetColor(&off)
 		}
+		// Emit a one-line deprecation warning when the legacy `spork ping`
+		// alias is used. Detection is via os.Args because Cobra does not
+		// propagate CalledAs() to parent commands in the execution path
+		// (it is only set on the leaf command actually dispatched).
+		if firstPositional(os.Args[1:]) == "ping" {
+			fmt.Fprintln(os.Stderr, "warning: `spork ping` is deprecated and will be removed in a future release; use `spork monitor` instead")
+		}
 		return nil
 	},
 }
@@ -161,6 +168,31 @@ var versionCmd = &cobra.Command{
 		fmt.Printf("  OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
 		return nil
 	},
+}
+
+// firstPositional returns the first non-flag argument from argv, or "" if
+// every argument is a flag or a flag value. Handles both `--foo=bar` and
+// `--foo bar` forms by conservatively skipping the token following any flag
+// that does not contain `=`. Unknown flags are treated as potentially taking
+// a value (same conservative behaviour Cobra uses internally).
+//
+// Used by PersistentPreRunE to detect whether the user typed the deprecated
+// `spork ping` alias vs the canonical `spork monitor`, because Cobra does
+// not expose CalledAs() on parent commands.
+func firstPositional(argv []string) string {
+	i := 0
+	for i < len(argv) {
+		a := argv[i]
+		if !strings.HasPrefix(a, "-") {
+			return a
+		}
+		if a == "--" || strings.Contains(a, "=") {
+			i++
+			continue
+		}
+		i += 2
+	}
+	return ""
 }
 
 // Execute runs the root command.

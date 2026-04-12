@@ -43,7 +43,13 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
-		monitors = filterMonitors(monitors, listFilterStatus, listFilterType)
+		// Defense in depth: server already honored filters via
+		// ListOptions.Filters (spork-go v0.4.1+). Re-apply locally so
+		// older SDKs or upstream misconfig can't leak unfiltered rows
+		// into structured output.
+		if listFilterStatus != "" || listFilterType != "" {
+			monitors = filterMonitors(monitors, listFilterStatus, listFilterType)
+		}
 
 		if cmdutil.Structured(cmd) {
 			return cmdutil.PrintStructured(cmd, monitors)
@@ -81,41 +87,53 @@ func init() {
 }
 
 // fetchMonitorsForListing resolves the caller's pagination intent into the
-// right SDK call. Three modes:
+// right SDK call. Four modes, layered on top of server-side filters:
 //
-//   - --page N  → one explicit page (uses ListMonitorsPage).
-//   - --limit N → auto-paginate but stop once we have N items.
-//   - neither   → auto-paginate through every page (ListMonitors default).
+//   - --page N   → one explicit page (uses ListMonitorsPage).
+//   - --limit N  → auto-paginate but stop once we have N items.
+//   - neither    → auto-paginate through every page (ListMonitors).
 //
-// --page-size controls per_page on the server. It is only consulted when one
-// of --page or --limit is set; otherwise we trust the SDK default.
+// --page-size controls per_page on the server. It is only consulted when
+// one of --page or --limit is set; otherwise the SDK default applies.
+//
+// --status and --type are pushed to the server via ListOptions.Filters.
+// Filtering happens server-side, so `--limit 5 --status down` now returns
+// "up to 5 down monitors" rather than "up to 5 monitors, of which some
+// happen to be down".
 func fetchMonitorsForListing(client *spork.Client) ([]spork.Monitor, error) {
 	ctx := context.Background()
+	filters := listFilters()
 
-	// Explicit single page.
+	// Explicit single page: one request, server-side filtered.
 	if listPage > 0 {
-		opts := spork.ListOptions{Page: listPage, PerPage: listPageSize}
+		opts := spork.ListOptions{Page: listPage, PerPage: listPageSize, Filters: filters}
 		monitors, _, err := client.ListMonitorsPage(ctx, opts)
 		return monitors, err
 	}
 
-	// No cap → use the plain auto-paginator.
-	if listLimit <= 0 {
+	// No cap, no filters → the zero-config path; plain auto-paginator.
+	if listLimit <= 0 && len(filters) == 0 {
 		return client.ListMonitors(ctx)
 	}
 
-	// Capped auto-pagination: loop ListMonitorsPage until we hit the limit or
-	// run out of pages. Matches how Stripe / PagerDuty CLIs behave under
-	// --limit.
+	// Otherwise: hand-rolled auto-pagination so we can (a) cap at --limit
+	// and/or (b) pass filters down. The loop's termination uses PageMeta
+	// HasMore, which respects both the server-reported total and the
+	// short-page heuristic for endpoints that don't populate Total.
 	var collected []spork.Monitor
-	opts := spork.ListOptions{Page: 1, PerPage: listPageSize}
+	opts := spork.ListOptions{Page: 1, PerPage: listPageSize, Filters: filters}
+	if listLimit > 0 && (opts.PerPage == 0 || listLimit < opts.PerPage) {
+		// Small --limit → request a small first page so we don't fetch 100
+		// records just to discard 95 of them.
+		opts.PerPage = listLimit
+	}
 	for {
 		page, meta, err := client.ListMonitorsPage(ctx, opts)
 		if err != nil {
 			return nil, err
 		}
 		collected = append(collected, page...)
-		if len(collected) >= listLimit {
+		if listLimit > 0 && len(collected) >= listLimit {
 			return collected[:listLimit], nil
 		}
 		if !meta.HasMore(len(page)) {
@@ -123,6 +141,23 @@ func fetchMonitorsForListing(client *spork.Client) ([]spork.Monitor, error) {
 		}
 		opts.Page = meta.Page + 1
 	}
+}
+
+// listFilters collects the --status and --type flag values into the
+// ListOptions.Filters map. Empty values are omitted; the SDK drops them
+// anyway but keeping the map compact makes --debug output readable.
+func listFilters() map[string]string {
+	if listFilterStatus == "" && listFilterType == "" {
+		return nil
+	}
+	f := make(map[string]string, 2)
+	if listFilterStatus != "" {
+		f["status"] = listFilterStatus
+	}
+	if listFilterType != "" {
+		f["type"] = listFilterType
+	}
+	return f
 }
 
 // filterMonitors applies client-side status and type filters.

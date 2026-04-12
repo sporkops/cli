@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/sporkops/cli/internal/auth"
 	"github.com/sporkops/cli/internal/debughttp"
@@ -16,8 +15,9 @@ import (
 )
 
 // Debug is set by the root command from --debug / SPORK_DEBUG. When true,
-// RequireAuth wraps the SDK's http.Client in debughttp.Transport so every
-// request and response is traced to stderr (with Authorization redacted).
+// RequireAuth attaches debughttp.Transport as an SDK HTTP middleware so
+// every request and response is traced to stderr (with Authorization
+// redacted).
 //
 // A package-level variable is used rather than threading a flag through
 // every call site to keep the change surgical. The CLI already imports
@@ -26,16 +26,14 @@ import (
 // is a follow-up refactor.
 var Debug bool
 
-// newHTTPClient returns the http.Client RequireAuth hands to the SDK. When
-// Debug is true the client is wired with debughttp.Transport.
-func newHTTPClient() *http.Client {
-	base := http.DefaultTransport
-	if Debug {
-		base = debughttp.NewTransport(base, nil)
-	}
-	return &http.Client{
-		Timeout:   30 * time.Second,
-		Transport: base,
+// debugMiddleware returns a spork.HTTPMiddleware that wraps the SDK's
+// transport in debughttp.Transport. We use middleware (v0.4.0+) rather
+// than replacing the whole http.Client via spork.WithHTTPClient so the
+// SDK's CheckRedirect logic — which strips Authorization on cross-host
+// redirects — stays in place even when --debug is on.
+func debugMiddleware() spork.HTTPMiddleware {
+	return func(next http.RoundTripper) http.RoundTripper {
+		return debughttp.NewTransport(next, nil)
 	}
 }
 
@@ -114,11 +112,14 @@ func RequireAuth() (*spork.Client, error) {
 		fmt.Fprintln(os.Stderr, "  Docs: https://sporkops.com/docs")
 		return nil, fmt.Errorf("not logged in")
 	}
-	return spork.NewClient(
+	opts := []spork.Option{
 		spork.WithAPIKey(token),
-		spork.WithUserAgent("spork-cli/"+spork.Version),
-		spork.WithHTTPClient(newHTTPClient()),
-	), nil
+		spork.WithUserAgent("spork-cli/" + spork.Version),
+	}
+	if Debug {
+		opts = append(opts, spork.WithHTTPMiddleware(debugMiddleware()))
+	}
+	return spork.NewClient(opts...), nil
 }
 
 // HandleAPIError prints user-friendly messages for common API errors.

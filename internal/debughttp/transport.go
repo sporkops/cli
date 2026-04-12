@@ -3,9 +3,11 @@
 // user passes --debug; it is safe to import elsewhere when an integration
 // needs the same visibility.
 //
-// The transport redacts the Authorization header so tokens do not leak into
-// logs, and truncates response bodies at 64 KiB to keep the terminal
-// navigable when the API returns a long list.
+// The transport redacts the Authorization header so tokens do not leak
+// into logs. Response bodies are buffered in full so the SDK sees the same
+// bytes it would without --debug, but only the first maxBodySnippet bytes
+// are actually written to the dump — the terminal does not need a megabyte
+// of JSON to be useful for debugging.
 package debughttp
 
 import (
@@ -14,18 +16,19 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"strings"
 	"time"
 )
 
-// maxBodySnippet bounds how much of a response body the debug transport
-// prints. It is large enough to show a full page of monitors and small
-// enough that `spork monitor list --debug` is still usable in a terminal.
+// maxBodySnippet bounds how much of a request/response body the debug
+// transport writes to its output stream. The full body always reaches the
+// SDK; this is a display cap only.
 const maxBodySnippet = 64 * 1024
 
 // Transport wraps another http.RoundTripper and prints each request and
 // response to Out. If Out is nil, it writes to os.Stderr. Use NewTransport
-// to construct one; the zero value is NOT usable because Base is required.
+// to construct one; the zero value is not usable because Base is required.
 type Transport struct {
 	// Base is the underlying RoundTripper. Required.
 	Base http.RoundTripper
@@ -45,16 +48,20 @@ func NewTransport(base http.RoundTripper, out io.Writer) *Transport {
 // RoundTrip satisfies http.RoundTripper.
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()
+
 	// Redact Authorization so tokens don't leak into logs. httputil.DumpRequestOut
-	// reads the header as-is, so we rewrite it on a clone.
+	// reads the header as-is, so we rewrite it on a clone. The clone shares
+	// the Body reader with req — that's fine because DumpRequestOut copies
+	// it into the dump without consuming the underlying source (it uses
+	// GetBody() when available, which the stdlib sets for byte-slice
+	// bodies, which is what the SDK produces).
 	clone := req.Clone(req.Context())
 	if v := clone.Header.Get("Authorization"); v != "" {
 		clone.Header.Set("Authorization", redactToken(v))
 	}
 
-	dump, err := httputil.DumpRequestOut(clone, true)
-	if err == nil {
-		t.write("--> ", dump)
+	if dump, err := httputil.DumpRequestOut(clone, true); err == nil {
+		t.writeDump("--> ", dump)
 	}
 
 	resp, err := t.Base.RoundTrip(req)
@@ -64,25 +71,36 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	// Buffer the body so we can both dump it and let the SDK read it.
-	body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxBodySnippet))
-	resp.Body.Close()
+	// Buffer the entire body so the SDK sees the same bytes it would have
+	// seen without --debug. Truncation happens only when we write to Out.
+	body, readErr := io.ReadAll(resp.Body)
+	closeErr := resp.Body.Close()
 	if readErr != nil {
-		// Couldn't fully read; still surface the status line.
+		// Surface the read error upstream — the SDK will report a more
+		// accurate diagnostic than we can synthesize here.
 		fmt.Fprintf(t.out(), "<-- %s (body read error after %s: %v)\n\n", resp.Status, elapsed, readErr)
-		resp.Body = io.NopCloser(bytes.NewReader(body))
-		return resp, nil
+		return nil, readErr
+	}
+	if closeErr != nil {
+		// Close errors are typically harmless (e.g., already closed), but
+		// worth surfacing when someone has debugging on.
+		fmt.Fprintf(t.out(), "(warning: closing response body returned: %v)\n", closeErr)
 	}
 
-	// Replace the body so downstream reads see it untouched. If the server
-	// sent more than maxBodySnippet, anything beyond the snippet is dropped
-	// from the debug dump but the response body still needs the full bytes,
-	// which we accept losing here in exchange for not buffering arbitrarily
-	// large payloads in the debug path.
+	// Reinstate the body so the SDK's JSON parser sees it normally.
 	resp.Body = io.NopCloser(bytes.NewReader(body))
 
-	header := fmt.Sprintf("<-- %s %s (%s)\n", resp.Status, req.URL.Path, elapsed)
-	t.write(header, body)
+	// For the dump, replace the body with a reader over our buffered copy
+	// and let DumpResponse do the formatting. Truncate only what we write
+	// to the output stream.
+	dumpResp := *resp
+	dumpResp.Body = io.NopCloser(bytes.NewReader(body))
+	if dump, err := httputil.DumpResponse(&dumpResp, true); err == nil {
+		header := fmt.Sprintf("<-- %s (%s, %d bytes)\n", resp.Status, elapsed, len(body))
+		t.writeHeader(header)
+		t.writeDump("", dump)
+	}
+
 	return resp, nil
 }
 
@@ -90,38 +108,36 @@ func (t *Transport) out() io.Writer {
 	if t.Out != nil {
 		return t.Out
 	}
-	return discardFallback()
+	return os.Stderr
 }
 
-// discardFallback is replaced in init() so the Transport has a sensible
-// default even when constructed as &Transport{Base: x} without a writer.
-var discardFallback = func() io.Writer { return nil }
-
-func init() {
-	// Use a closure captured at init time so the package does not import
-	// os at the top level for this one default (keeps it testable — tests
-	// set Out directly).
-	discardFallback = func() io.Writer {
-		return stderr()
-	}
+func (t *Transport) writeHeader(header string) {
+	fmt.Fprint(t.out(), header)
 }
 
-func (t *Transport) write(prefix string, payload []byte) {
+// writeDump writes up to maxBodySnippet bytes of payload to Out, preceded
+// by prefix. It guarantees the output ends with a blank line so successive
+// dumps are visually separated even when the dumped content does not end
+// in a newline.
+func (t *Transport) writeDump(prefix string, payload []byte) {
 	w := t.out()
-	if w == nil {
-		return
-	}
 	fmt.Fprint(w, prefix)
-	w.Write(payload)
-	if len(payload) > 0 && payload[len(payload)-1] != '\n' {
-		fmt.Fprintln(w)
+	if len(payload) > maxBodySnippet {
+		w.Write(payload[:maxBodySnippet])
+		fmt.Fprintf(w, "\n... [%d bytes truncated from dump; full body delivered to SDK]\n", len(payload)-maxBodySnippet)
+	} else {
+		w.Write(payload)
+		if len(payload) > 0 && payload[len(payload)-1] != '\n' {
+			fmt.Fprintln(w)
+		}
 	}
 	fmt.Fprintln(w)
 }
 
+// redactToken replaces the value of an Authorization header with a short
+// prefix + "<redacted>" so log readers can tell which scheme and which
+// token (roughly) was used, without leaving the full secret in plain text.
 func redactToken(headerValue string) string {
-	// Show the scheme and a short prefix so it's clear which token was used,
-	// without revealing enough to be reusable.
 	parts := strings.SplitN(headerValue, " ", 2)
 	if len(parts) == 2 && parts[1] != "" {
 		prefix := parts[1]
