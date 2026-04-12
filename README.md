@@ -11,7 +11,7 @@ Spork is uptime monitoring that lives in your terminal. Add a monitor in seconds
 ## Quickstart
 
 ```sh
-brew install sporkops/tap/spork && spork login && spork ping add https://yoursite.com
+brew install sporkops/tap/spork && spork login && spork monitor add https://yoursite.com
 ```
 
 That's it. You're monitoring.
@@ -35,24 +35,26 @@ curl -sSL https://sporkops.com | sh
 | Command | Description |
 |---|---|
 | `spork login` | Log in via browser |
-| `spork ping add <url>` | Add an uptime monitor |
-| `spork ping list` | List all monitors |
-| `spork ping status` | Show current status |
-| `spork ping history <id\|url>` | Show check history |
-| `spork ping rm <id\|url>` | Remove a monitor |
-| `spork ping pause <id\|url>` | Pause a monitor |
-| `spork ping update <id\|url>` | Update monitor settings |
+| `spork monitor add <url>` | Add an uptime monitor |
+| `spork monitor list` | List all monitors |
+| `spork monitor status` | Show current status |
+| `spork monitor history <id\|url>` | Show check history |
+| `spork monitor rm <id\|url>` | Remove a monitor |
+| `spork monitor pause <id\|url>` | Pause a monitor |
+| `spork monitor update <id\|url>` | Update monitor settings |
 | `spork apikey` | Manage API keys |
 | `spork alertchannel` | Manage alert channels |
+
+`spork ping` remains as a deprecated alias for `spork monitor` and will be removed in a future release.
 
 ### Flags
 
 - `--json` — output as JSON (on any command)
-- `--name` — set monitor name (on `ping add`)
-- `--method` — HTTP method, default GET (on `ping add`)
-- `--interval` — check interval in seconds, 60 or 30 (on `ping add`)
-- `--limit` — number of history records (on `ping history`)
-- `--force` — skip confirmation (on `ping rm`)
+- `--name` — set monitor name (on `monitor add`)
+- `--method` — HTTP method, default GET (on `monitor add`)
+- `--interval` — check interval in seconds, 60 or 30 (on `monitor add`)
+- `--limit` — number of history records (on `monitor history`)
+- `--force` — skip confirmation (on `monitor rm`)
 
 ## Infrastructure as Code
 

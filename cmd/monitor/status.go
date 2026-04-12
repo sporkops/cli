@@ -1,4 +1,4 @@
-package ping
+package monitor
 
 import (
 	"context"
@@ -19,9 +19,9 @@ var (
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show current status of all monitors",
-	Example: `  spork ping status
-  spork ping status --status down
-  spork ping status --json`,
+	Example: `  spork monitor status
+  spork monitor status --status down
+  spork monitor status --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
 		if err != nil {
@@ -45,7 +45,7 @@ var statusCmd = &cobra.Command{
 
 		if len(monitors) == 0 {
 			fmt.Println("No monitors yet. Add one:")
-			fmt.Println("  spork ping add <url>")
+			fmt.Println("  spork monitor add <url>")
 			return nil
 		}
 

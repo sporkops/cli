@@ -1,4 +1,4 @@
-package ping
+package monitor
 
 import (
 	"context"
@@ -34,10 +34,10 @@ var addCmd = &cobra.Command{
 	Long: `Add a new uptime monitor for the given URL.
 
 Example:
-  spork ping add https://example.com
-  spork ping add https://api.example.com/health --name "API Health" --interval 300
-  spork ping add https://example.com --type keyword --keyword "OK"
-  spork ping add https://example.com --type ssl --ssl-warn-days 30`,
+  spork monitor add https://example.com
+  spork monitor add https://api.example.com/health --name "API Health" --interval 300
+  spork monitor add https://example.com --type keyword --keyword "OK"
+  spork monitor add https://example.com --type ssl --ssl-warn-days 30`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()

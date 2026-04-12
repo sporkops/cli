@@ -1,4 +1,4 @@
-package ping
+package monitor
 
 import (
 	"bufio"
@@ -21,9 +21,9 @@ var rmCmd = &cobra.Command{
 	Use:   "rm <id|url>",
 	Short: "Remove a monitor",
 	Long:  "Remove an uptime monitor by ID or URL.",
-	Example: `  spork ping rm https://example.com
-  spork ping rm abc123 --yes
-  spork ping rm abc123 --force`,
+	Example: `  spork monitor rm https://example.com
+  spork monitor rm abc123 --yes
+  spork monitor rm abc123 --force`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()

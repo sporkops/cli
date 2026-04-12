@@ -1,4 +1,4 @@
-package ping
+package monitor
 
 import (
 	"context"
@@ -16,7 +16,7 @@ var historyLimit int
 var historyCmd = &cobra.Command{
 	Use:   "history <id|url>",
 	Short: "Show recent check results for a monitor",
-	Long:  "Show recent uptime check results for a monitor.\n\nExample:\n  spork ping history https://example.com\n  spork ping history abc123 --limit 50",
+	Long:  "Show recent uptime check results for a monitor.\n\nExample:\n  spork monitor history https://example.com\n  spork monitor history abc123 --limit 50",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()

@@ -1,4 +1,4 @@
-package ping
+package monitor
 
 import (
 	"context"
@@ -33,7 +33,7 @@ var (
 var updateCmd = &cobra.Command{
 	Use:   "update <id|url>",
 	Short: "Update an existing monitor",
-	Long:  "Update an existing monitor's settings.\n\nExample:\n  spork ping update https://example.com --name \"New Name\"\n  spork ping update abc123 --interval 300\n\nTip: Use 'spork ping pause' and 'spork ping unpause' to pause/resume monitors.",
+	Long:  "Update an existing monitor's settings.\n\nExample:\n  spork monitor update https://example.com --name \"New Name\"\n  spork monitor update abc123 --interval 300\n\nTip: Use 'spork monitor pause' and 'spork monitor unpause' to pause/resume monitors.",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
