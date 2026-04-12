@@ -1,146 +1,141 @@
+// Package auth handles CLI credential storage.
+//
+// Tokens live in the operating system's secure credential store — macOS
+// Keychain, the Linux Secret Service (libsecret / GNOME Keyring / KWallet),
+// or the Windows Credential Manager — via github.com/99designs/keyring.
+//
+// For headless / CI environments where no keyring daemon is reachable,
+// the CLI falls back to the SPORK_API_KEY environment variable, which
+// every command already honours. That is the same pattern `gh`, `stripe`,
+// and `aws` use: interactive logins write to the OS keyring, CI pipelines
+// pass credentials through environment.
+//
+// Plain-text credential files on disk are NOT supported. The historical
+// ~/.config/spork/credentials.json is ignored; migration is intentionally
+// a non-goal per the v1 scope decision.
 package auth
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"time"
+
+	"github.com/99designs/keyring"
 )
 
-type credentials struct {
-	Token   string `json:"token"`
-	SavedAt string `json:"saved_at"`
-}
+// ErrNoKeyring is returned when the OS keyring is unavailable (typical in
+// headless CI environments). Callers should surface a helpful message
+// pointing users at SPORK_API_KEY.
+var ErrNoKeyring = errors.New("no OS keyring available")
 
-func configDir() (string, error) {
-	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, "spork"), nil
-	}
-	home, err := os.UserHomeDir()
+// keyringService is the identifier written to every keyring backend. It
+// doubles as the label users see in Keychain Access / seahorse, so keep
+// it human-readable.
+const keyringService = "sporkops-cli"
+
+// tokenKey is the single item key under which we store the current API
+// token. Future expansion (multiple profiles, org-specific tokens) can
+// extend this; v1 stores exactly one token per user.
+const tokenKey = "api-token"
+
+// openKeyring opens the OS keyring, preferring the most-native backend
+// available on the current platform. Order mirrors gh and stripe CLI
+// defaults:
+//
+//   - macOS: Keychain
+//   - Linux: Secret Service (libsecret), then KWallet
+//   - Windows: Credential Manager
+//
+// We intentionally do NOT include the FileBackend — plain-text or
+// passphrase-prompted file storage is a DX hazard (silent prompts in
+// scripts, weaker than a real keyring, ambiguous location on disk).
+// Callers without a keyring use SPORK_API_KEY.
+func openKeyring() (keyring.Keyring, error) {
+	ring, err := keyring.Open(keyring.Config{
+		ServiceName: keyringService,
+		AllowedBackends: []keyring.BackendType{
+			keyring.KeychainBackend,       // macOS
+			keyring.SecretServiceBackend,  // Linux (GNOME Keyring, KWallet via libsecret bridge)
+			keyring.KWalletBackend,        // Linux (KDE)
+			keyring.WinCredBackend,        // Windows
+		},
+		// macOS Keychain specifics: use the default user keychain and a
+		// stable service label so items group cleanly in Keychain Access.
+		KeychainName: "login",
+		// Linux Secret Service specifics: the collection is the default
+		// "login" collection, unlocked on user login.
+		LibSecretCollectionName: "login",
+	})
 	if err != nil {
-		return "", fmt.Errorf("determining home directory: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrNoKeyring, err)
 	}
-	return filepath.Join(home, ".config", "spork"), nil
+	return ring, nil
 }
 
-// CredentialsPath returns the path to the credentials file.
-func CredentialsPath() (string, error) {
-	dir, err := configDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, "credentials.json"), nil
-}
-
-// SaveToken writes the auth token to the credentials file.
-// It refuses to write if the target path is a symlink and uses atomic
-// rename to prevent TOCTOU race conditions.
+// SaveToken stores the API token in the OS keyring. It replaces any
+// existing token under the same key.
 func SaveToken(token string) error {
-	path, err := CredentialsPath()
+	ring, err := openKeyring()
 	if err != nil {
-		return err
+		return fmt.Errorf("opening keyring: %w", err)
 	}
-
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("creating config directory: %w", err)
-	}
-
-	// Refuse to write through a symlink to prevent symlink attacks.
-	if fi, err := os.Lstat(path); err == nil {
-		if fi.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("refusing to write credentials: %s is a symlink", path)
-		}
-	}
-
-	creds := credentials{
-		Token:   token,
-		SavedAt: time.Now().UTC().Format(time.RFC3339),
-	}
-	data, err := json.MarshalIndent(creds, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshaling credentials: %w", err)
-	}
-
-	// Write to a temp file in the same directory and atomic-rename into place
-	// to avoid partial writes and TOCTOU races.
-	tmp, err := os.CreateTemp(dir, ".credentials-*.tmp")
-	if err != nil {
-		return fmt.Errorf("creating temp file: %w", err)
-	}
-	tmpPath := tmp.Name()
-
-	if err := os.Chmod(tmpPath, 0o600); err != nil {
-		tmp.Close()
-		os.Remove(tmpPath)
-		return fmt.Errorf("setting temp file permissions: %w", err)
-	}
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpPath)
-		return fmt.Errorf("writing credentials to temp file: %w", err)
-	}
-
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("closing temp file: %w", err)
-	}
-
-	if err := os.Rename(tmpPath, path); err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("renaming temp file to credentials: %w", err)
-	}
-
-	return nil
+	return ring.Set(keyring.Item{
+		Key:         tokenKey,
+		Data:        []byte(token),
+		Label:       "Sporkops CLI API token",
+		Description: "Used by the `spork` CLI to authenticate API requests.",
+	})
 }
 
-// LoadToken reads the auth token from the credentials file.
-// It also accepts a token via the SPORK_API_KEY environment variable.
+// LoadToken returns the stored API token.
+//
+// Resolution order:
+//
+//  1. SPORK_API_KEY environment variable (always wins, so CI pipelines
+//     and ephemeral containers can run without a keyring).
+//  2. OS keyring entry written by `spork login`.
+//
+// Returns "" with no error when neither is populated, so RequireAuth can
+// surface the standard "log in first" message instead of a raw keyring
+// error.
 func LoadToken() (string, error) {
 	if token := os.Getenv("SPORK_API_KEY"); token != "" {
 		return token, nil
 	}
-
-	path, err := CredentialsPath()
+	ring, err := openKeyring()
 	if err != nil {
-		return "", err
-	}
-
-	// Check file permissions and warn if more permissive than 0600.
-	if fi, err := os.Stat(path); err == nil {
-		perm := fi.Mode().Perm()
-		if perm&0o177 != 0 {
-			fmt.Fprintf(os.Stderr, "Warning: credentials file %s has permissions %04o, expected 0600. "+
-				"Consider running: chmod 600 %s\n", path, perm, path)
-		}
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, ErrNoKeyring) {
+			// No keyring, no env var → not logged in, same as "empty
+			// keyring" for the caller's purposes.
 			return "", nil
 		}
-		return "", fmt.Errorf("reading credentials: %w", err)
+		return "", fmt.Errorf("opening keyring: %w", err)
 	}
-
-	var creds credentials
-	if err := json.Unmarshal(data, &creds); err != nil {
-		return "", fmt.Errorf("parsing credentials: %w", err)
+	item, err := ring.Get(tokenKey)
+	if err != nil {
+		if errors.Is(err, keyring.ErrKeyNotFound) {
+			return "", nil
+		}
+		return "", fmt.Errorf("reading token from keyring: %w", err)
 	}
-
-	return creds.Token, nil
+	return string(item.Data), nil
 }
 
-// ClearToken deletes the credentials file.
+// ClearToken removes the stored API token. It is a no-op when no token
+// is stored (so `spork logout` on a fresh machine does not error).
 func ClearToken() error {
-	path, err := CredentialsPath()
+	ring, err := openKeyring()
 	if err != nil {
-		return err
+		if errors.Is(err, ErrNoKeyring) {
+			return nil
+		}
+		return fmt.Errorf("opening keyring: %w", err)
 	}
-	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("removing credentials: %w", err)
+	if err := ring.Remove(tokenKey); err != nil {
+		if errors.Is(err, keyring.ErrKeyNotFound) {
+			return nil
+		}
+		return fmt.Errorf("removing token from keyring: %w", err)
 	}
 	return nil
 }

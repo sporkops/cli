@@ -62,7 +62,9 @@ Prefer Terraform? Use the [Spork Terraform Provider](https://registry.terraform.
 
 ## Configuration
 
-Credentials are stored in `~/.config/spork/credentials.json` after login.
+Credentials are stored in the operating system's secure credential store (macOS Keychain, Linux Secret Service / GNOME Keyring, Windows Credential Manager) after `spork login`.
+
+For headless / CI environments, set the `SPORK_API_KEY` environment variable instead — it is honored by every command and bypasses the keyring entirely.
 
 The API base URL can be overridden with the `SPORK_API_URL` environment variable.
 

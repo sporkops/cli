@@ -12,6 +12,7 @@ import (
 	"github.com/sporkops/cli/cmd/members"
 	"github.com/sporkops/cli/cmd/monitor"
 	"github.com/sporkops/cli/cmd/statuspage"
+	"github.com/sporkops/cli/cmd/webhook"
 	"github.com/sporkops/cli/internal/cmdutil"
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/spork-go"
@@ -105,6 +106,7 @@ func init() {
 	rootCmd.AddCommand(alertchannel.Cmd)
 	rootCmd.AddCommand(incident.Cmd)
 	rootCmd.AddCommand(statuspage.Cmd)
+	rootCmd.AddCommand(webhook.Cmd)
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versionCmd)
 }
