@@ -3,15 +3,15 @@ module github.com/sporkops/cli
 go 1.24.7
 
 require (
+	github.com/99designs/keyring v1.2.2
 	github.com/spf13/cobra v1.10.2
-	github.com/sporkops/spork-go v0.3.1-0.20260412150725-d13c84036723
+	github.com/sporkops/spork-go v0.5.0
 	golang.org/x/term v0.28.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
-	github.com/99designs/keyring v1.2.2 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
