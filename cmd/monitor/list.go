@@ -89,7 +89,7 @@ func init() {
 // fetchMonitorsForListing resolves the caller's pagination intent into the
 // right SDK call. Four modes, layered on top of server-side filters:
 //
-//   - --page N   → one explicit page (uses ListMonitorsPage).
+//   - --page N   → one explicit page (uses ListMonitorsWithOptions).
 //   - --limit N  → auto-paginate but stop once we have N items.
 //   - neither    → auto-paginate through every page (ListMonitors).
 //
@@ -107,7 +107,7 @@ func fetchMonitorsForListing(client *spork.Client) ([]spork.Monitor, error) {
 	// Explicit single page: one request, server-side filtered.
 	if listPage > 0 {
 		opts := spork.ListOptions{Page: listPage, PerPage: listPageSize, Filters: filters}
-		monitors, _, err := client.ListMonitorsPage(ctx, opts)
+		monitors, _, err := client.ListMonitorsWithOptions(ctx, opts)
 		return monitors, err
 	}
 
@@ -128,7 +128,7 @@ func fetchMonitorsForListing(client *spork.Client) ([]spork.Monitor, error) {
 		opts.PerPage = listLimit
 	}
 	for {
-		page, meta, err := client.ListMonitorsPage(ctx, opts)
+		page, meta, err := client.ListMonitorsWithOptions(ctx, opts)
 		if err != nil {
 			return nil, err
 		}
