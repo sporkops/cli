@@ -13,10 +13,12 @@ var authHTTPClient = &http.Client{
 }
 
 const (
-	loginTimeout    = 5 * time.Minute
-	pollInterval    = 5 * time.Second
-	apiBase         = "https://api.sporkops.com/v1"
-	browserAuthURL  = "https://sporkops.com/cli-auth"
+	loginTimeout       = 5 * time.Minute
+	defaultPollInterval = 5 * time.Second
+	minPollInterval    = 1 * time.Second
+	maxPollInterval    = 30 * time.Second
+	apiBase            = "https://api.sporkops.com/v1"
+	browserAuthURL     = "https://sporkops.com/cli-auth"
 )
 
 type createSessionResponse struct {
@@ -53,10 +55,22 @@ func Login() (string, error) {
 	// Step 2: print URL and user code; do not open the browser
 	fmt.Printf("Visit this URL to authenticate:\n%s\n\nEnter this code: %s\n\nWaiting for confirmation...\n", browserAuthURL, session.UserCode)
 
-	// Step 3: poll
+	// Step 3: poll at the server-specified interval, clamped to a safe range
+	// so a misbehaving or hostile server cannot trigger a tight poll loop.
+	interval := defaultPollInterval
+	if session.Interval > 0 {
+		interval = time.Duration(session.Interval) * time.Second
+	}
+	if interval < minPollInterval {
+		interval = minPollInterval
+	}
+	if interval > maxPollInterval {
+		interval = maxPollInterval
+	}
+
 	deadline := time.Now().Add(loginTimeout)
 	for time.Now().Before(deadline) {
-		time.Sleep(pollInterval)
+		time.Sleep(interval)
 
 		apiKey, done, err := pollSession(session.DeviceCode)
 		if err != nil {
