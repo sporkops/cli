@@ -5,7 +5,7 @@ go 1.24.7
 require (
 	github.com/99designs/keyring v1.2.2
 	github.com/spf13/cobra v1.10.2
-	github.com/sporkops/spork-go v0.6.1-0.20260417193531-a644a22b7d05
+	github.com/sporkops/spork-go v0.6.1
 	golang.org/x/term v0.28.0
 	gopkg.in/yaml.v3 v3.0.1
 )
