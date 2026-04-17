@@ -52,7 +52,11 @@ For a recurring window, pass --recurrence daily|weekly|monthly plus
 caps the series.
 
 You may alternatively supply --file pointing to a JSON or YAML file with the
-full body. Flags override file values.`,
+full body. Flags override file values.
+
+Behavior defaults (server-side): suppress_alerts=true, exclude_from_uptime=true,
+pause_checks=false. Pass --suppress-alerts=false (or --no-suppress-alerts) to
+override. The CLI only sends these fields when you explicitly set them.`,
 	Example: `  spork maintenance create --name "Weekly DB" --all-monitors \
     --timezone America/Los_Angeles \
     --start 2026-05-05T09:00:00Z --end 2026-05-05T10:00:00Z \
@@ -107,10 +111,14 @@ func init() {
 	createCmd.Flags().StringVar(&createRecurrence, "recurrence", "", "recurrence type: daily, weekly, or monthly")
 	createCmd.Flags().IntSliceVar(&createRecurrenceDays, "recurrence-days", nil, "weekly: 0-6 (Sun=0); monthly: 1-31")
 	createCmd.Flags().StringVar(&createRecurrenceUntil, "recurrence-until", "", "RFC3339 UTC cap on the series")
-	createCmd.Flags().BoolVar(&createSuppressAlerts, "suppress-alerts", true, "suppress alert deliveries during the window")
-	createCmd.Flags().BoolVar(&createNoSuppressAlerts, "no-suppress-alerts", false, "deliver alerts even during the window")
-	createCmd.Flags().BoolVar(&createExcludeUptime, "exclude-from-uptime", true, "drop in-window checks from uptime-percentage")
-	createCmd.Flags().BoolVar(&createNoExcludeUptime, "no-exclude-from-uptime", false, "include in-window checks in uptime-percentage")
+	// Default-false so cmd.Flags().Changed() reliably distinguishes "user
+	// didn't set this" from "user set it". The server applies the real
+	// defaults (suppress=true, exclude=true, pause=false) when the field
+	// is absent, so omitting the flag means "inherit server default".
+	createCmd.Flags().BoolVar(&createSuppressAlerts, "suppress-alerts", false, "explicitly set suppress_alerts=true (server default is true when omitted)")
+	createCmd.Flags().BoolVar(&createNoSuppressAlerts, "no-suppress-alerts", false, "deliver alerts even during the window (overrides server default)")
+	createCmd.Flags().BoolVar(&createExcludeUptime, "exclude-from-uptime", false, "explicitly set exclude_from_uptime=true (server default is true when omitted)")
+	createCmd.Flags().BoolVar(&createNoExcludeUptime, "no-exclude-from-uptime", false, "include in-window checks in uptime-percentage (overrides server default)")
 	createCmd.Flags().BoolVar(&createPauseChecks, "pause-checks", false, "skip dispatch entirely during the window (default keeps checks running)")
 }
 
@@ -149,8 +157,10 @@ func applyCreateFlags(cmd *cobra.Command, mw *spork.MaintenanceWindow) {
 	if createRecurrenceUntil != "" {
 		mw.RecurrenceUntil = createRecurrenceUntil
 	}
-	// Pointer-bool flags: honor --no-X overrides, then explicit --X,
-	// then leave unset so the server default applies.
+	// Pointer-bool flags. Resolution order: --no-X (force false) wins over
+	// --X (explicit user set), which wins over unset (leave nil so server
+	// default applies). All flags default to false so Changed() is the
+	// only signal that distinguishes "unset" from "set to false".
 	if createNoSuppressAlerts {
 		v := false
 		mw.SuppressAlerts = &v
