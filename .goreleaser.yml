@@ -36,6 +36,22 @@ checksum:
   name_template: "checksums.txt"
   algorithm: sha256
 
+# Keyless cosign signature over checksums.txt using the workflow's OIDC
+# identity. install.sh verifies this signature, binding every release back to
+# the sporkops/cli GitHub Actions workflow that produced it.
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
+    args:
+      - "sign-blob"
+      - "--yes"
+      - "--output-signature=${signature}"
+      - "--output-certificate=${certificate}"
+      - "${artifact}"
+    artifacts: checksum
+    output: true
+
 changelog:
   sort: asc
   filters:

@@ -12,6 +12,7 @@ package debughttp
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -49,15 +50,23 @@ func NewTransport(base http.RoundTripper, out io.Writer) *Transport {
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()
 
-	// Redact Authorization so tokens don't leak into logs. httputil.DumpRequestOut
-	// reads the header as-is, so we rewrite it on a clone. The clone shares
-	// the Body reader with req — that's fine because DumpRequestOut copies
-	// it into the dump without consuming the underlying source (it uses
-	// GetBody() when available, which the stdlib sets for byte-slice
-	// bodies, which is what the SDK produces).
+	// Build a redacted clone for dumping. Authorization is redacted on the
+	// header, and if the request body is JSON we walk it and redact values
+	// at known-sensitive keys. The original req is untouched so the SDK
+	// sends the real bytes on the wire.
 	clone := req.Clone(req.Context())
 	if v := clone.Header.Get("Authorization"); v != "" {
 		clone.Header.Set("Authorization", redactToken(v))
+	}
+	if req.Body != nil && req.GetBody != nil {
+		if body, err := req.GetBody(); err == nil {
+			if raw, err := io.ReadAll(body); err == nil {
+				_ = body.Close()
+				redacted := redactJSONBody(raw)
+				clone.Body = io.NopCloser(bytes.NewReader(redacted))
+				clone.ContentLength = int64(len(redacted))
+			}
+		}
 	}
 
 	if dump, err := httputil.DumpRequestOut(clone, true); err == nil {
@@ -90,11 +99,13 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Reinstate the body so the SDK's JSON parser sees it normally.
 	resp.Body = io.NopCloser(bytes.NewReader(body))
 
-	// For the dump, replace the body with a reader over our buffered copy
-	// and let DumpResponse do the formatting. Truncate only what we write
-	// to the output stream.
+	// For the dump, replace the body with the redacted copy and let
+	// DumpResponse do the formatting. Truncate only what we write to the
+	// output stream.
+	dumpBody := redactJSONBody(body)
 	dumpResp := *resp
-	dumpResp.Body = io.NopCloser(bytes.NewReader(body))
+	dumpResp.Body = io.NopCloser(bytes.NewReader(dumpBody))
+	dumpResp.ContentLength = int64(len(dumpBody))
 	if dump, err := httputil.DumpResponse(&dumpResp, true); err == nil {
 		header := fmt.Sprintf("<-- %s (%s, %d bytes)\n", resp.Status, elapsed, len(body))
 		t.writeHeader(header)
@@ -147,4 +158,82 @@ func redactToken(headerValue string) string {
 		return parts[0] + " " + prefix + "...<redacted>"
 	}
 	return "<redacted>"
+}
+
+// sensitiveJSONKeys is the set of JSON field names whose values are replaced
+// with "<redacted>" before we write a request or response body to the debug
+// stream. Match is case-insensitive and substring-based so nested variants
+// ("api_key", "bot_token", "integration_key") all land in the net.
+var sensitiveJSONKeys = []string{
+	"api_key", "apikey",
+	"token", "bot_token", "access_token", "refresh_token", "id_token",
+	"secret", "webhook_secret", "signing_secret", "client_secret",
+	"password", "passphrase",
+	"integration_key", "routing_key",
+	"authorization",
+}
+
+// redactJSONBody tries to parse body as JSON and replace values at known
+// sensitive keys with "<redacted>". If parsing fails, the body is returned
+// unchanged — the caller should expect that non-JSON bodies (binary blobs,
+// form encoding) are logged as-is. The SDK only ever sends JSON, so this is
+// the common path.
+func redactJSONBody(body []byte) []byte {
+	if len(body) == 0 {
+		return body
+	}
+	// Cheap check: skip any non-JSON payload so we don't garble form posts.
+	trimmed := bytes.TrimLeft(body, " \t\r\n")
+	if len(trimmed) == 0 || (trimmed[0] != '{' && trimmed[0] != '[') {
+		return body
+	}
+	var parsed any
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return body
+	}
+	redacted := redactValue(parsed)
+	var out bytes.Buffer
+	enc := json.NewEncoder(&out)
+	// Don't escape < > & — the dump is consumed by humans on a terminal,
+	// not a browser, so we want "<redacted>" to appear literally.
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(redacted); err != nil {
+		return body
+	}
+	// Encoder appends a trailing newline; strip it so the dump matches the
+	// shape of the original body.
+	return bytes.TrimRight(out.Bytes(), "\n")
+}
+
+func redactValue(v any) any {
+	switch vv := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(vv))
+		for k, val := range vv {
+			if isSensitiveKey(k) {
+				out[k] = "<redacted>"
+				continue
+			}
+			out[k] = redactValue(val)
+		}
+		return out
+	case []any:
+		out := make([]any, len(vv))
+		for i, el := range vv {
+			out[i] = redactValue(el)
+		}
+		return out
+	default:
+		return v
+	}
+}
+
+func isSensitiveKey(k string) bool {
+	lk := strings.ToLower(k)
+	for _, needle := range sensitiveJSONKeys {
+		if strings.Contains(lk, needle) {
+			return true
+		}
+	}
+	return false
 }

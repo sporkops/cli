@@ -138,3 +138,75 @@ func TestRedactToken(t *testing.T) {
 		}
 	}
 }
+
+func TestRedactJSONBody_ReplacesSensitiveKeys(t *testing.T) {
+	// Locks in the fix for response-body secret leakage: webhook creation
+	// responses, alert-channel config, and api-key create responses all
+	// surface raw secrets that must not appear in --debug output.
+	cases := []struct {
+		name       string
+		in         string
+		mustRedact []string
+		mustKeep   []string
+	}{
+		{
+			name:       "webhook create response",
+			in:         `{"data":{"id":"ch_1","type":"webhook","secret":"whsec_abc123","verified":true}}`,
+			mustRedact: []string{"whsec_abc123"},
+			mustKeep:   []string{"ch_1", "webhook", "verified"},
+		},
+		{
+			name:       "api key create response",
+			in:         `{"api_key":"sk_live_very_secret","label":"ci"}`,
+			mustRedact: []string{"sk_live_very_secret"},
+			mustKeep:   []string{"ci"},
+		},
+		{
+			name:       "alert channel config map (pagerduty + telegram)",
+			in:         `{"data":{"type":"pagerduty","config":{"integration_key":"pd_xyz","bot_token":"bot_zzz"}}}`,
+			mustRedact: []string{"pd_xyz", "bot_zzz"},
+			mustKeep:   []string{"pagerduty"},
+		},
+		{
+			name:       "nested array",
+			in:         `{"items":[{"password":"hunter2"},{"name":"ok"}]}`,
+			mustRedact: []string{"hunter2"},
+			mustKeep:   []string{"ok"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := string(redactJSONBody([]byte(tc.in)))
+			for _, needle := range tc.mustRedact {
+				if strings.Contains(out, needle) {
+					t.Errorf("expected %q to be redacted, got:\n%s", needle, out)
+				}
+			}
+			for _, needle := range tc.mustKeep {
+				if !strings.Contains(out, needle) {
+					t.Errorf("expected %q to survive redaction, got:\n%s", needle, out)
+				}
+			}
+			if !strings.Contains(out, "<redacted>") {
+				t.Errorf("expected redaction marker, got:\n%s", out)
+			}
+		})
+	}
+}
+
+func TestRedactJSONBody_NonJSONPassesThrough(t *testing.T) {
+	// Binary / form / empty bodies must not be mutated — we only redact
+	// structured JSON because that is what the SDK sends.
+	cases := [][]byte{
+		nil,
+		[]byte(""),
+		[]byte("plain text"),
+		[]byte("name=foo&password=bar"), // form-encoded — NOT redacted
+	}
+	for _, in := range cases {
+		out := redactJSONBody(in)
+		if !bytes.Equal(out, in) {
+			t.Errorf("non-JSON body mutated: %q -> %q", in, out)
+		}
+	}
+}
