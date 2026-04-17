@@ -9,6 +9,7 @@ import (
 	"github.com/sporkops/cli/cmd/alertchannel"
 	"github.com/sporkops/cli/cmd/apikey"
 	"github.com/sporkops/cli/cmd/incident"
+	"github.com/sporkops/cli/cmd/maintenance"
 	"github.com/sporkops/cli/cmd/members"
 	"github.com/sporkops/cli/cmd/monitor"
 	"github.com/sporkops/cli/cmd/statuspage"
@@ -105,6 +106,7 @@ func init() {
 	rootCmd.AddCommand(apikey.Cmd)
 	rootCmd.AddCommand(alertchannel.Cmd)
 	rootCmd.AddCommand(incident.Cmd)
+	rootCmd.AddCommand(maintenance.Cmd)
 	rootCmd.AddCommand(statuspage.Cmd)
 	rootCmd.AddCommand(webhook.Cmd)
 	rootCmd.AddCommand(completionCmd)
