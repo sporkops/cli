@@ -34,7 +34,11 @@ var updateCmd = &cobra.Command{
 changed — everything else is left alone.
 
 To retarget monitors use a fresh create; the API does not replace
-targeting arrays via PATCH to avoid accidental broadening.`,
+targeting arrays via PATCH to avoid accidental broadening.
+
+All boolean flags default to false so "unset" and "explicitly false" are
+distinguishable. To re-enable a previously disabled toggle, pass --X=true
+(e.g., --suppress-alerts=true).`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := cmdutil.RequireAuth()
@@ -71,12 +75,15 @@ func init() {
 	updateCmd.Flags().StringVar(&updateRecurrence, "recurrence", "", "new recurrence type")
 	updateCmd.Flags().IntSliceVar(&updateRecurrenceDays, "recurrence-days", nil, "new recurrence days")
 	updateCmd.Flags().StringVar(&updateRecurrenceUntil, "recurrence-until", "", "new recurrence cap")
-	updateCmd.Flags().BoolVar(&updateSuppressAlerts, "suppress-alerts", true, "suppress alerts")
-	updateCmd.Flags().BoolVar(&updateNoSuppressAlerts, "no-suppress-alerts", false, "deliver alerts")
-	updateCmd.Flags().BoolVar(&updateExcludeUptime, "exclude-from-uptime", true, "drop in-window checks from uptime")
-	updateCmd.Flags().BoolVar(&updateNoExcludeUptime, "no-exclude-from-uptime", false, "include in-window checks in uptime")
-	updateCmd.Flags().BoolVar(&updatePauseChecks, "pause-checks", false, "skip dispatch during window")
-	updateCmd.Flags().BoolVar(&updateNoPauseChecks, "no-pause-checks", false, "run checks during window")
+	// All bool flags default to false so Changed() cleanly detects explicit
+	// user intent. Leaving a flag unset leaves the corresponding server
+	// field untouched.
+	updateCmd.Flags().BoolVar(&updateSuppressAlerts, "suppress-alerts", false, "re-enable alert suppression (set the field to true)")
+	updateCmd.Flags().BoolVar(&updateNoSuppressAlerts, "no-suppress-alerts", false, "disable alert suppression (set the field to false)")
+	updateCmd.Flags().BoolVar(&updateExcludeUptime, "exclude-from-uptime", false, "re-enable uptime exclusion (set the field to true)")
+	updateCmd.Flags().BoolVar(&updateNoExcludeUptime, "no-exclude-from-uptime", false, "disable uptime exclusion (set the field to false)")
+	updateCmd.Flags().BoolVar(&updatePauseChecks, "pause-checks", false, "enable check pausing (set the field to true)")
+	updateCmd.Flags().BoolVar(&updateNoPauseChecks, "no-pause-checks", false, "disable check pausing (set the field to false)")
 }
 
 func applyUpdateFlags(cmd *cobra.Command, patch *spork.MaintenanceWindow) {
@@ -104,6 +111,8 @@ func applyUpdateFlags(cmd *cobra.Command, patch *spork.MaintenanceWindow) {
 	if updateRecurrenceUntil != "" {
 		patch.RecurrenceUntil = updateRecurrenceUntil
 	}
+	// Pointer-bool flags. --no-X wins over explicit --X; without either,
+	// leave nil so the server keeps its current value.
 	switch {
 	case updateNoSuppressAlerts:
 		v := false
