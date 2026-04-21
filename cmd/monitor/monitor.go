@@ -10,27 +10,17 @@ import (
 )
 
 // validMonitorTypes lists allowed monitor types for add and update commands.
-// Note: "ping" here is the ICMP-style check type, which is distinct from the
-// deprecated "ping" command alias (the command alias lives on Cmd.Aliases;
-// the deprecation warning is emitted from the root command's
-// PersistentPreRunE so it fires for every subcommand, not just the ones
-// that inherit monitor.Cmd's pre-run hook).
+// "ping" here is the ICMP-style check type, not a command name.
 var validMonitorTypes = map[string]bool{"http": true, "ssl": true, "dns": true, "keyword": true, "tcp": true, "ping": true}
 
 // validHTTPMethods lists allowed HTTP methods for add and update commands.
 var validHTTPMethods = map[string]bool{"GET": true, "HEAD": true, "POST": true, "PUT": true}
 
-// Cmd is the `spork monitor` parent command. The historical name was
-// `spork ping`; it is retained as an alias for one release cycle. The
-// deprecation warning is emitted by the root command's PersistentPreRunE
-// (see cmd/root.go) — attaching it here would shadow the root-level
-// PersistentPreRunE because Cobra fires only the nearest pre-run hook in
-// the command tree.
+// Cmd is the `spork monitor` parent command.
 var Cmd = &cobra.Command{
-	Use:     "monitor",
-	Aliases: []string{"ping"},
-	Short:   "Manage uptime monitors",
-	Long:    "Create, list, and manage uptime monitors for your sites and APIs.",
+	Use:   "monitor",
+	Short: "Manage uptime monitors",
+	Long:  "Create, list, and manage uptime monitors for your sites and APIs.",
 }
 
 func init() {

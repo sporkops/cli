@@ -45,8 +45,6 @@ curl -sSL https://sporkops.com | sh
 | `spork apikey` | Manage API keys |
 | `spork alertchannel` | Manage alert channels |
 
-`spork ping` remains as a deprecated alias for `spork monitor` and will be removed in a future release.
-
 ### Flags
 
 - `--json` — output as JSON (on any command)
