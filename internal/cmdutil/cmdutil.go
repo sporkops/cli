@@ -26,6 +26,15 @@ import (
 // is a follow-up refactor.
 var Debug bool
 
+// OrgID is set by the root command from --org / SPORK_ORG_ID. When
+// non-empty it is forwarded to the SDK via spork.WithOrganization so
+// every org-scoped call lands on the named tenant. When empty the SDK
+// auto-resolves on first use by listing /users/me/orgs — the right
+// behaviour for API keys (which are bound to one org) and for users
+// who only belong to one organization. Users in multiple orgs should
+// pass --org explicitly to avoid the auto-resolve picking arbitrarily.
+var OrgID string
+
 // debugMiddleware returns a spork.HTTPMiddleware that wraps the SDK's
 // transport in debughttp.Transport. We use middleware (v0.4.0+) rather
 // than replacing the whole http.Client via spork.WithHTTPClient so the
@@ -119,11 +128,19 @@ func RequireAuth() (*spork.Client, error) {
 	if Debug {
 		opts = append(opts, spork.WithHTTPMiddleware(debugMiddleware()))
 	}
+	if OrgID != "" {
+		opts = append(opts, spork.WithOrganization(OrgID))
+	}
 	return spork.NewClient(opts...), nil
 }
 
 // HandleAPIError prints user-friendly messages for common API errors.
 // Returns true if the error was handled (printed), false otherwise.
+//
+// The 403 branch is split by the server's `error.code` so multi-org
+// failures (`api_key_org_mismatch`, `not_a_member`, `org_limit_reached`)
+// route to dedicated guidance instead of being misreported as billing
+// problems via the generic "https://sporkops.com/billing" footer.
 func HandleAPIError(err error) bool {
 	if spork.IsUnauthorized(err) {
 		fmt.Fprintln(os.Stderr, "Session expired")
@@ -142,14 +159,49 @@ func HandleAPIError(err error) bool {
 		return true
 	}
 	if spork.IsForbidden(err) {
-		fmt.Fprintln(os.Stderr, "Access denied.")
-		fmt.Fprintln(os.Stderr)
 		var apiErr *spork.APIError
-		if errors.As(err, &apiErr) && apiErr.Message != "" {
-			fmt.Fprintf(os.Stderr, "  %s\n", apiErr.Message)
+		if errors.As(err, &apiErr) {
+			switch apiErr.Code {
+			case "api_key_org_mismatch":
+				fmt.Fprintln(os.Stderr, "Wrong organization for this API key")
+				fmt.Fprintln(os.Stderr)
+				fmt.Fprintln(os.Stderr, "  This API key is bound to a different organization than the one")
+				fmt.Fprintln(os.Stderr, "  you targeted with --org / SPORK_ORG_ID.")
+				fmt.Fprintln(os.Stderr)
+				fmt.Fprintln(os.Stderr, "  Run `spork whoami` to see which org the key belongs to,")
+				fmt.Fprintln(os.Stderr, "  or unset --org / SPORK_ORG_ID to use the key's home org.")
+				return true
+			case "not_a_member":
+				fmt.Fprintln(os.Stderr, "Not a member of that organization")
+				fmt.Fprintln(os.Stderr)
+				fmt.Fprintln(os.Stderr, "  The --org you supplied isn't an organization your account belongs to.")
+				fmt.Fprintln(os.Stderr, "  List your organizations with `spork whoami` or contact the org owner")
+				fmt.Fprintln(os.Stderr, "  to request an invite.")
+				return true
+			case "org_limit_reached", "free_org_limit_reached":
+				fmt.Fprintln(os.Stderr, "Organization limit reached")
+				fmt.Fprintln(os.Stderr)
+				if apiErr.Message != "" {
+					fmt.Fprintf(os.Stderr, "  %s\n", apiErr.Message)
+				} else {
+					fmt.Fprintln(os.Stderr, "  Free / Starter / Pro plans grant one organization slot;")
+					fmt.Fprintln(os.Stderr, "  Agency grants five. Upgrade an existing org to Agency to")
+					fmt.Fprintln(os.Stderr, "  manage up to 5 orgs, or contact support@sporkops.com to")
+					fmt.Fprintln(os.Stderr, "  raise the cap.")
+				}
+				return true
+			}
+			fmt.Fprintln(os.Stderr, "Access denied")
 			fmt.Fprintln(os.Stderr)
+			if apiErr.Message != "" {
+				fmt.Fprintf(os.Stderr, "  %s\n", apiErr.Message)
+				fmt.Fprintln(os.Stderr)
+			}
+			// Generic 403s are most often role / billing related.
+			fmt.Fprintln(os.Stderr, "  Verify your role and billing status: https://sporkops.com/billing")
+			return true
 		}
-		fmt.Fprintln(os.Stderr, "  https://sporkops.com/billing")
+		fmt.Fprintln(os.Stderr, "Access denied.")
 		return true
 	}
 	return false
