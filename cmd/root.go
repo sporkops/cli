@@ -26,6 +26,7 @@ var (
 	outputFlag  string
 	debugFlag   bool
 	noColorFlag bool
+	orgFlag     string
 )
 
 // SetVersion sets the CLI version string (injected via ldflags).
@@ -71,6 +72,14 @@ var rootCmd = &cobra.Command{
 		// Propagate --debug (or SPORK_DEBUG) to cmdutil so every client it
 		// constructs wraps the HTTP transport in debughttp.Transport.
 		cmdutil.Debug = debugFlag
+		// Propagate --org (or SPORK_ORG_ID) to cmdutil so every client it
+		// constructs is scoped to the requested organization. Empty
+		// means the SDK auto-resolves on first call. The flag wins over
+		// the env var when both are set.
+		if orgFlag == "" {
+			orgFlag = strings.TrimSpace(os.Getenv("SPORK_ORG_ID"))
+		}
+		cmdutil.OrgID = orgFlag
 		// --no-color forces colors off. The default (nil) honors NO_COLOR
 		// and TTY detection in internal/output.
 		if noColorFlag {
@@ -86,6 +95,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "table", "output format: table, json, yaml")
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "log HTTP requests and responses to stderr (tokens are redacted)")
 	rootCmd.PersistentFlags().BoolVar(&noColorFlag, "no-color", false, "disable colored output (also honors NO_COLOR env)")
+	rootCmd.PersistentFlags().StringVar(&orgFlag, "org", "", "organization ID for org-scoped operations (also honors SPORK_ORG_ID; auto-resolved when omitted)")
 	// Honor SPORK_DEBUG as a convenience for CI; flag takes precedence.
 	if v := os.Getenv("SPORK_DEBUG"); v == "1" || strings.EqualFold(v, "true") {
 		debugFlag = true

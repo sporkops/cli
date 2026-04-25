@@ -26,6 +26,15 @@ import (
 // is a follow-up refactor.
 var Debug bool
 
+// OrgID is set by the root command from --org / SPORK_ORG_ID. When
+// non-empty it is forwarded to the SDK via spork.WithOrganization so
+// every org-scoped call lands on the named tenant. When empty the SDK
+// auto-resolves on first use by listing /users/me/orgs — the right
+// behaviour for API keys (which are bound to one org) and for users
+// who only belong to one organization. Users in multiple orgs should
+// pass --org explicitly to avoid the auto-resolve picking arbitrarily.
+var OrgID string
+
 // debugMiddleware returns a spork.HTTPMiddleware that wraps the SDK's
 // transport in debughttp.Transport. We use middleware (v0.4.0+) rather
 // than replacing the whole http.Client via spork.WithHTTPClient so the
@@ -118,6 +127,9 @@ func RequireAuth() (*spork.Client, error) {
 	}
 	if Debug {
 		opts = append(opts, spork.WithHTTPMiddleware(debugMiddleware()))
+	}
+	if OrgID != "" {
+		opts = append(opts, spork.WithOrganization(OrgID))
 	}
 	return spork.NewClient(opts...), nil
 }

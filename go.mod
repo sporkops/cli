@@ -5,10 +5,16 @@ go 1.24.7
 require (
 	github.com/99designs/keyring v1.2.2
 	github.com/spf13/cobra v1.10.2
-	github.com/sporkops/spork-go v0.7.0
+	github.com/sporkops/spork-go v0.8.0
 	golang.org/x/term v0.28.0
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+// Local development override — the SDK at v0.8.0 is the multi-org
+// release; while it is being prepared for tagging, the CLI builds
+// against the working tree alongside this repo. Remove the replace
+// directive once spork-go v0.8.0 is published.
+replace github.com/sporkops/spork-go => ../spork-go
 
 require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
