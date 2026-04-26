@@ -3,10 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
-	"github.com/sporkops/cli/internal/auth"
 	"github.com/sporkops/cli/internal/cmdutil"
 	spork "github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
@@ -17,20 +15,20 @@ var whoamiCmd = &cobra.Command{
 	Short: "Show current organization info",
 	Long:  "Display your organization details: name, email, role, subscriptions, and entitlements.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		token, err := auth.LoadToken()
+		// Use the shared RequireAuth so --org / SPORK_ORG_ID,
+		// --debug HTTP tracing, and the spork-cli user-agent all
+		// flow through. Hand-rolling spork.NewClient here used to
+		// silently ignore those flags — a multi-org user passing
+		// --org would see the wrong org, and --debug was inert.
+		client, err := cmdutil.RequireAuth()
 		if err != nil {
-			return fmt.Errorf("loading credentials: %w", err)
-		}
-		if token == "" {
-			fmt.Fprintln(os.Stderr, "Not logged in. Run: spork login")
-			return fmt.Errorf("not logged in")
+			return err
 		}
 
-		client := spork.NewClient(spork.WithAPIKey(token))
 		org, err := client.GetOrganization(context.Background())
 		if err != nil {
-			if spork.IsUnauthorized(err) {
-				fmt.Fprintln(os.Stderr, "Session expired. Run: spork login")
+			if cmdutil.HandleAPIError(err) {
+				return err
 			}
 			return err
 		}
