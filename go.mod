@@ -10,12 +10,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-// Local development override — the SDK at v0.8.0 is the multi-org
-// release; while it is being prepared for tagging, the CLI builds
-// against the working tree alongside this repo. Remove the replace
-// directive once spork-go v0.8.0 is published.
-replace github.com/sporkops/spork-go => ../spork-go
-
 require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
