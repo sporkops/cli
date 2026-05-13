@@ -12,9 +12,11 @@ import (
 	"github.com/sporkops/cli/cmd/maintenance"
 	"github.com/sporkops/cli/cmd/members"
 	"github.com/sporkops/cli/cmd/monitor"
+	"github.com/sporkops/cli/cmd/org"
 	"github.com/sporkops/cli/cmd/statuspage"
 	"github.com/sporkops/cli/cmd/webhook"
 	"github.com/sporkops/cli/internal/cmdutil"
+	"github.com/sporkops/cli/internal/config"
 	"github.com/sporkops/cli/internal/output"
 	"github.com/sporkops/spork-go"
 	"github.com/spf13/cobra"
@@ -94,11 +96,29 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "log HTTP requests and responses to stderr (tokens are redacted)")
 	rootCmd.PersistentFlags().BoolVar(&noColorFlag, "no-color", false, "disable colored output (also honors NO_COLOR env)")
 	// Seed orgFlag from SPORK_ORG_ID before flag parsing so a bare
-	// `spork monitor list` (no --org) picks up the env value. The
-	// flag default becomes the env value; cobra's parser still
-	// overwrites it when --org=<value> is supplied on argv.
+	// `spork monitor list` (no --org) picks up the env value. When that's
+	// also empty, fall back to the persisted active org from
+	// ~/.config/spork/config.json (managed via `spork org use`). The
+	// resulting precedence chain — flag > env > config > SDK auto-
+	// resolve — matches `gh`'s default-host model and what users expect
+	// once they've explicitly run `spork org use ORG_ID`.
+	//
+	// A malformed config file silently falls through to "no preference"
+	// here so a one-off corruption can't brick every command; users see
+	// the real error the next time they run `spork org current` or
+	// `spork org use`.
 	orgFlag = strings.TrimSpace(os.Getenv("SPORK_ORG_ID"))
-	rootCmd.PersistentFlags().StringVar(&orgFlag, "org", orgFlag, "organization ID for org-scoped operations (also honors SPORK_ORG_ID; auto-resolved when omitted)")
+	if orgFlag == "" {
+		if s, err := config.Load(); err == nil {
+			orgFlag = strings.TrimSpace(s.ActiveOrganizationID)
+		}
+	}
+	// Cobra treats backticks in flag descriptions as the metavar
+	// placeholder (turns into `--org SPORK ORG USE` in help), so the
+	// reference to the `spork org use` subcommand is rendered without
+	// backticks here. Help text reads slightly less crisp; usage line
+	// stays clean.
+	rootCmd.PersistentFlags().StringVar(&orgFlag, "org", orgFlag, "organization ID for org-scoped operations (also honors SPORK_ORG_ID and the active org saved by 'spork org use'; auto-resolved when omitted)")
 	// Honor SPORK_DEBUG as a convenience for CI; flag takes precedence.
 	if v := os.Getenv("SPORK_DEBUG"); v == "1" || strings.EqualFold(v, "true") {
 		debugFlag = true
@@ -113,6 +133,7 @@ func init() {
 	rootCmd.AddCommand(alertchannel.Cmd)
 	rootCmd.AddCommand(incident.Cmd)
 	rootCmd.AddCommand(maintenance.Cmd)
+	rootCmd.AddCommand(org.Cmd)
 	rootCmd.AddCommand(statuspage.Cmd)
 	rootCmd.AddCommand(webhook.Cmd)
 	rootCmd.AddCommand(completionCmd)
