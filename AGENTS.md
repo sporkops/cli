@@ -45,9 +45,27 @@ A future release will add structured JSON error envelopes on stderr and a `--age
 
 ## Command tree
 
-Top-level: `login` · `logout` · `monitor` · `apikey` · `alertchannel` · `incident` · `webhook` · `statuspage` · `members`.
+Top-level: `login` · `logout` · `monitor` · `apikey` · `alertchannel` · `incident` · `webhook` · `statuspage` · `members` · `org` · `maintenance`.
 
 Discover flags with `spork <command> --help`. The flag list below is a starting point — confirm with `--help` if a flag is missing.
+
+## Multi-org
+
+Spork is multi-tenant: an account can own or belong to several organizations. Every org-scoped command (`monitor list`, `alert-channel ...`, etc.) needs to know which tenant to target. The CLI resolves it in this order, highest precedence first:
+
+1. `--org ORG_ID` on the command line
+2. `SPORK_ORG_ID` env var
+3. Active org saved by `spork org use ORG_ID` (in `~/.config/spork/config.json`)
+4. SDK auto-resolve — works when an API key is in use (keys are bound to one org); errors with a candidate list for Firebase users in multiple orgs
+
+For agents, the simplest setup is to export `SPORK_ORG_ID` alongside `SPORK_API_KEY` in your environment and let it flow through every command. For interactive users, `spork org use` is the one-shot equivalent.
+
+| Command | Purpose |
+|---|---|
+| `spork org list` | Show every org you belong to, with the active one marked |
+| `spork org current` | Print the active org ID (and where the value came from) |
+| `spork org use ORG_ID` | Persist an org as the active default |
+| `spork org use --clear` | Drop the saved preference; fall back to env / auto-resolve |
 
 ## Common workflows
 
